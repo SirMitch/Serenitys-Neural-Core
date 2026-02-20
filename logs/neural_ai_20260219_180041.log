@@ -1,0 +1,69 @@
+================================================================================
+Neural AI Loader - Session Log
+Started: 2026-02-19T18:00:41.108233
+Debug: False
+================================================================================
+
+================================================================================
+                        Neural AI Loader - Session Start                        
+================================================================================
+[18:00:41] [INFO   ] [MAIN              ] Script root: D:\Serenity's Neural Core
+[18:00:41] [INFO   ] [MAIN              ] Tools dir: D:\Serenity's Neural Core\tools
+[18:00:41] [INFO   ] [MAIN              ] Logs dir: D:\Serenity's Neural Core\logs
+[18:00:41] [INFO   ] [MAIN              ] Docs dir: D:\Serenity's Neural Core\docs
+[18:00:41] [INFO   ] [MAIN              ] Debug mode: False
+[18:00:41] [DEBUG  ] [DOCVIEWER         ] Found docs directory: D:\Serenity's Neural Core\docs
+[18:00:41] [INFO   ] [DOCVIEWER         ] Scanned 11 documentation files
+[18:00:46] [INFO   ] [MAIN              ] User selected: Start AI Session
+[18:00:46] [DEBUG  ] [SYSINFO           ] Running system info script: D:\Serenity's Neural Core\tools\gather_system_info.ps1
+[18:00:47] [DEBUG  ] [SYSINFO           ]   OS_VERSION=Microsoft Windows 11 Pro
+[18:00:47] [DEBUG  ] [SYSINFO           ]   CPU_NAME=AMD Ryzen 7 9800X3D 8-Core Processor
+[18:00:47] [DEBUG  ] [SYSINFO           ]   CPU_CORES=8
+[18:00:47] [DEBUG  ] [SYSINFO           ]   RAM_GB=62
+[18:00:47] [DEBUG  ] [SYSINFO           ]   PAGE_FILE_MB=124473
+[18:00:47] [DEBUG  ] [SYSINFO           ]   GPU_NAME=NVIDIA GeForce RTX 3080 Ti
+[18:00:47] [DEBUG  ] [SYSINFO           ]   GPU_DRIVER=591.86
+[18:00:47] [DEBUG  ] [SYSINFO           ]   VRAM_TOTAL_MB=12288
+[18:00:47] [DEBUG  ] [SYSINFO           ]   VRAM_FREE_MB=11052
+[18:00:47] [INFO   ] [SYSINFO           ] System info gathered: 9 properties
+[18:00:47] [INFO   ] [MAIN              ] System: OS=Microsoft Windows 11 Pro, CPU=8c, RAM=62GB
+[18:01:16] [INFO   ] [MAIN              ] Selected backend: Ollama (default)
+[18:01:24] [INFO   ] [MAIN              ] Selected interpreter: OpenHands (Docker - File/Web/Vision Agent)
+[18:01:28] [WARN   ] [MAIN              ] Ollama not running; attempting start
+[18:01:28] [INFO   ] [OLLAMA            ] Starting Ollama server in background...
+[18:01:28] [DEBUG  ] [OLLAMA            ] Ollama process spawned
+[18:01:28] [INFO   ] [OLLAMA            ] Waiting for Ollama (up to 30s)...
+[18:01:30] [DEBUG  ] [OLLAMA            ] Ollama check: running
+[18:01:30] [INFO   ] [OLLAMA            ] Ollama is ready (took 2.0s)
+[18:01:33] [DEBUG  ] [OLLAMA            ] Ollama check: running
+[18:01:35] [INFO   ] [OLLAMA            ] Found 13 models
+[18:01:35] [INFO   ] [MAIN              ] Found 13 models
+[18:01:52] [INFO   ] [MAIN              ] Selected model: gemma3:1b
+[18:01:52] [INFO   ] [CONFIG            ] Configuring: OpenHands (Docker - File/Web/Vision Agent) + gemma3:1b
+[18:01:52] [DEBUG  ] [CONFIG            ] System: RAM=62GB, CPU=8, VRAM=12288MB
+[18:01:52] [DEBUG  ] [CONFIG            ] Model: large=False, vision=False
+[18:01:52] [DEBUG  ] [CONFIG            ] Ollama config: gpu_layers=48, threads=7, context=8192
+[18:01:52] [DEBUG  ] [CONFIG            ] Docker config: mem=31g, cpus=7, vision=False
+[18:01:52] [INFO   ] [CONFIG            ] Configuration complete: launch_mode=browser
+[18:01:52] [INFO   ] [MAIN              ] Config: browser
+
+================================================================================
+                         Launching OpenHands Browser UI                         
+================================================================================
+[18:01:52] [INFO   ] [OPENHANDS         ] Launching OpenHands: model=gemma3:1b, mem=31g, cpu=7
+[18:01:52] [DEBUG  ] [OPENHANDS         ] Docker is available
+[18:01:52] [DEBUG  ] [OPENHANDS         ] Container neural-openhands: not running
+[18:01:52] [DEBUG  ] [OPENHANDS         ] Container neural-openhands: does not exist
+[18:01:52] [DEBUG  ] [OPENHANDS         ] Checking for Docker image...
+[18:01:52] [INFO   ] [OPENHANDS         ] Image not found; pulling ghcr.io/all-hands-ai/openhands:main...
+[18:01:53] [ERROR  ] [OPENHANDS         ] Failed to pull image: failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path 
+[18:01:53] [WARN   ] [MAIN              ] OpenHands launch failed: Failed to pull image: failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path 
+[18:01:53] [INFO   ] [INTERPRETER       ] Setting up interpreter for model: gemma3:1b
+[18:01:53] [DEBUG  ] [INTERPRETER       ] Mocking pkg_resources...
+[18:01:55] [INFO   ] [INTERPRETER       ] Open Interpreter imported successfully
+[18:01:55] [DEBUG  ] [INTERPRETER       ] Config: context=8192, max_tokens=2000
+[18:01:55] [INFO   ] [INTERPRETER       ] Pre-warming model with test request...
+[18:02:09] [INFO   ] [INTERPRETER       ] Model warmed up successfully
+[18:02:09] [INFO   ] [MAIN              ] Fallback to terminal
+[18:02:09] [INFO   ] [INTERPRETER       ] Starting chat loop
+[18:02:14] [DEBUG  ] [INTERPRETER       ] User input: helo

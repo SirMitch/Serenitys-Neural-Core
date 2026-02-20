@@ -1,0 +1,64 @@
+================================================================================
+Neural AI Loader - Session Log
+Started: 2026-02-19T18:53:43.014163
+Debug: False
+================================================================================
+
+================================================================================
+                        Neural AI Loader - Session Start                        
+================================================================================
+[18:53:43] [INFO   ] [MAIN              ] Script root: D:\Serenity's Neural Core
+[18:53:43] [INFO   ] [MAIN              ] Tools dir: D:\Serenity's Neural Core\tools
+[18:53:43] [INFO   ] [MAIN              ] Logs dir: D:\Serenity's Neural Core\logs
+[18:53:43] [INFO   ] [MAIN              ] Docs dir: D:\Serenity's Neural Core\docs
+[18:53:43] [INFO   ] [MAIN              ] Debug mode: False
+[18:53:43] [DEBUG  ] [DOCVIEWER         ] Found docs directory: D:\Serenity's Neural Core\docs
+[18:53:43] [INFO   ] [DOCVIEWER         ] Scanned 11 documentation files
+[18:53:51] [INFO   ] [MAIN              ] User selected: Start AI Session
+[18:53:51] [DEBUG  ] [SYSINFO           ] Running system info script: D:\Serenity's Neural Core\tools\gather_system_info.ps1
+[18:53:52] [DEBUG  ] [SYSINFO           ]   OS_VERSION=Microsoft Windows 11 Pro
+[18:53:52] [DEBUG  ] [SYSINFO           ]   CPU_NAME=AMD Ryzen 7 9800X3D 8-Core Processor
+[18:53:52] [DEBUG  ] [SYSINFO           ]   CPU_CORES=8
+[18:53:52] [DEBUG  ] [SYSINFO           ]   RAM_GB=62
+[18:53:52] [DEBUG  ] [SYSINFO           ]   PAGE_FILE_MB=124473
+[18:53:52] [DEBUG  ] [SYSINFO           ]   GPU_NAME=NVIDIA GeForce RTX 3080 Ti
+[18:53:52] [DEBUG  ] [SYSINFO           ]   GPU_DRIVER=591.86
+[18:53:52] [DEBUG  ] [SYSINFO           ]   VRAM_TOTAL_MB=12288
+[18:53:52] [DEBUG  ] [SYSINFO           ]   VRAM_FREE_MB=10827
+[18:53:52] [INFO   ] [SYSINFO           ] System info gathered: 9 properties
+[18:53:52] [INFO   ] [MAIN              ] System: OS=Microsoft Windows 11 Pro, CPU=8c, RAM=62GB
+[18:54:04] [INFO   ] [MAIN              ] Selected backend: Ollama (default)
+[18:54:13] [INFO   ] [MAIN              ] Selected interpreter: OpenHands (Docker - File/Web/Vision Agent)
+[18:54:16] [DEBUG  ] [OLLAMA            ] Ollama check: running
+[18:54:16] [INFO   ] [MAIN              ] Ollama is running
+[18:54:18] [DEBUG  ] [OLLAMA            ] Ollama check: running
+[18:54:20] [INFO   ] [OLLAMA            ] Found 13 models
+[18:54:20] [INFO   ] [MAIN              ] Found 13 models
+[18:54:24] [INFO   ] [MAIN              ] Selected model: gemma3:1b
+[18:54:24] [INFO   ] [CONFIG            ] Configuring: OpenHands (Docker - File/Web/Vision Agent) + gemma3:1b
+[18:54:24] [DEBUG  ] [CONFIG            ] System: RAM=62GB, CPU=8, VRAM=12288MB
+[18:54:24] [DEBUG  ] [CONFIG            ] Model: large=False, vision=False
+[18:54:24] [DEBUG  ] [CONFIG            ] Ollama config: gpu_layers=48, threads=7, context=8192
+[18:54:24] [DEBUG  ] [CONFIG            ] Docker config: mem=31g, cpus=7, vision=False
+[18:54:24] [INFO   ] [CONFIG            ] Configuration complete: launch_mode=browser
+[18:54:24] [INFO   ] [MAIN              ] Config: browser
+
+================================================================================
+                         Launching OpenHands Browser UI                         
+================================================================================
+[18:54:24] [INFO   ] [OPENHANDS         ] Launching OpenHands: model=gemma3:1b, mem=31g, cpu=7
+[18:54:24] [DEBUG  ] [OPENHANDS         ] Docker is available
+[18:54:24] [DEBUG  ] [OPENHANDS         ] Container neural-openhands: not running
+[18:54:24] [DEBUG  ] [OPENHANDS         ] Container neural-openhands: does not exist
+[18:54:24] [DEBUG  ] [OPENHANDS         ] Checking for Docker image...
+[18:54:24] [DEBUG  ] [OPENHANDS         ] State directory ready: C:\Users\mitch\.openhands-state
+[18:54:24] [DEBUG  ] [OPENHANDS         ] Found workspace: D:\OpenInturpter
+[18:54:24] [DEBUG  ] [OPENHANDS         ] Building docker run command...
+[18:54:24] [DEBUG  ] [OPENHANDS         ] Docker command: docker run -d --name neural-openhands -p 3000:3000 -m 31g --cpus 7 -v C:\Users\mitch\.openhands-state:/root/.openhands-state -v D:\OpenInturpter:/workspace --add-host=host.docker.internal:host-gateway -e LLM_MODEL=gemma3:1b ghcr.io/all-hands-ai/openhands:main
+[18:54:25] [ERROR  ] [OPENHANDS         ] Docker run failed: docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint neural-openhand
+[18:54:25] [WARN   ] [MAIN              ] OpenHands launch failed: Docker run failed: docker: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint neural-openhand
+[18:54:25] [INFO   ] [INTERPRETER       ] Setting up interpreter for model: gemma3:1b
+[18:54:25] [DEBUG  ] [INTERPRETER       ] Mocking pkg_resources...
+[18:54:29] [INFO   ] [INTERPRETER       ] Open Interpreter imported successfully
+[18:54:29] [DEBUG  ] [INTERPRETER       ] Config: context=8192, max_tokens=2000
+[18:54:29] [INFO   ] [INTERPRETER       ] Pre-warming model with test request...
