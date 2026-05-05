@@ -50,3 +50,12 @@ htmlcov/
 TEMP.txt
 TEMP_last_10.txt
 addr_tail.tmp
+
+# Virtual environments and installed packages (NOT code)
+modules/site-packages/
+modules/*/Lib/
+modules/*/Scripts/
+modules/*/*.egg-info/
+
+# Keep old/mistaken folders for reference  
+# Serenity, Serenity neural, SerenityNeuralCore, serenity(old)
