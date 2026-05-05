@@ -1,0 +1,33 @@
+================================================================================
+Neural AI Loader - Session Log
+Started: 2026-02-19T17:55:01.715214
+Debug: False
+================================================================================
+
+================================================================================
+                        Neural AI Loader - Session Start                        
+================================================================================
+[17:55:01] [INFO   ] [MAIN              ] Script root: D:\Serenity's Neural Core
+[17:55:01] [INFO   ] [MAIN              ] Tools dir: D:\Serenity's Neural Core\tools
+[17:55:01] [INFO   ] [MAIN              ] Logs dir: D:\Serenity's Neural Core\logs
+[17:55:01] [INFO   ] [MAIN              ] Docs dir: D:\Serenity's Neural Core\docs
+[17:55:01] [INFO   ] [MAIN              ] Debug mode: False
+[17:55:01] [DEBUG  ] [DOCVIEWER         ] Found docs directory: D:\Serenity's Neural Core\docs
+[17:55:01] [INFO   ] [DOCVIEWER         ] Scanned 11 documentation files
+[17:55:33] [INFO   ] [MAIN              ] User selected: Documentation
+
+================================================================================
+                              Documentation Viewer                              
+================================================================================
+[17:55:33] [DEBUG  ] [DOCVIEWER         ] Found docs directory: D:\Serenity's Neural Core\docs
+[17:55:33] [INFO   ] [DOCVIEWER         ] Scanned 11 documentation files
+[17:55:33] [INFO   ] [DOCVIEWER         ] Documentation system ready (11 files)
+[17:55:43] [DEBUG  ] [DOCVIEWER         ] Read document: 00_START_HERE.txt
+[17:55:51] [DEBUG  ] [DOCVIEWER         ] User closed document: 00_START_HERE.txt
+[17:55:54] [DEBUG  ] [DOCVIEWER         ] Read document: QUICK_START.md
+[17:55:57] [DEBUG  ] [DOCVIEWER         ] User closed document: QUICK_START.md
+[17:56:05] [INFO   ] [DOCVIEWER         ] User returned to main menu from docs
+[17:56:05] [DEBUG  ] [DOCVIEWER         ] Found docs directory: D:\Serenity's Neural Core\docs
+[17:56:05] [INFO   ] [DOCVIEWER         ] Scanned 11 documentation files
+[17:56:29] [DEBUG  ] [DOCVIEWER         ] Found docs directory: D:\Serenity's Neural Core\docs
+[17:56:29] [INFO   ] [DOCVIEWER         ] Scanned 11 documentation files
