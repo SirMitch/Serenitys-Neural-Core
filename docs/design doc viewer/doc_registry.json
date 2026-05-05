@@ -1,0 +1,368 @@
+{
+  "ADDR": {
+    "file": "ADDR.md",
+    "title": "ADDR — Single Source of Truth",
+    "type": "core",
+    "last_updated": "2026-05-03 (Session 23: NON-MICRO-LLM MODE + Design Pass)"
+  },
+  "ADDR_PY": {
+    "file": "ADDR.py",
+    "title": "ADDR Module — Indexer + State Machine + Search",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "SCANNER": {
+    "file": "AlphaChart v3.4 — Market-Wide Scanner Mode Supplemental Design Document.md",
+    "title": "Market-Wide Scanner Mode — Supplemental Design Document",
+    "type": "design",
+    "last_updated": "2026-05-02"
+  },
+  "CHANGELOG": {
+    "file": "CHANGELOG.md",
+    "title": "AlphaChart — Change Log & History",
+    "type": "core",
+    "last_updated": "2026-05-03"
+  },
+  "CONTINUATION": {
+    "file": "CONTINUATION_PROMPT.md",
+    "title": "Continuation Prompt (loaded via ADDR on-demand)",
+    "type": "core",
+    "last_updated": "2026-05-03"
+  },
+  "WORKFLOW": {
+    "file": "WORKFLOW_ANALYSIS.md",
+    "title": "Workflow Analysis (Previous Session)",
+    "type": "analysis",
+    "last_updated": "2026-05-02"
+  },
+  "JARVIS_MEMORY_v3": {
+    "file": "JARVIS_MEMORY_SYSTEM_v3_DESIGN.md",
+    "title": "JARVIS-Level Memory System v3.0 — CORTANA-PLUS Design",
+    "type": "design",
+    "last_updated": "2026-05-03"
+  },
+  "JARVIS_DESIGN_REVIEW": {
+    "file": "Serenity_JARVIS_Level_Design_Review.md",
+    "title": "Serenity JARVIS-Level Design Review",
+    "type": "design",
+    "last_updated": "2026-05-03"
+  },
+  "SERENITY_ARCHITECTURE": {
+    "file": "Serenity_Architecture_Foundation.md",
+    "title": "Serenity — AlphaChart AI Assistant Core System Architecture",
+    "type": "design",
+    "last_updated": "2026-05-03"
+  },
+  "SERENITY_IMPLEMENTATION": {
+    "file": "Serenity_IMPLEMENTATION_STATUS.md",
+    "title": "Serenity Implementation Status — Phase2 Progress",
+    "type": "status",
+    "last_updated": "2026-05-03"
+  },
+  "SERENITY_TOOLS": {
+    "file": "Serenity_Active_Tools_Inventory.md",
+    "title": "Serenity Active Tools Inventory (6-Layer)",
+    "type": "inventory",
+    "last_updated": "2026-05-03"
+  },
+  "OPENHANDS_INTEGRATION": {
+    "file": "OpenHands_integration_analysis.md",
+    "title": "OpenHands Integration Analysis",
+    "type": "analysis",
+    "last_updated": "2026-05-03"
+  },
+  "LEARNING_ENGINE": {
+    "file": "LEARNING_ENGINE_INTEGRATED.md",
+    "title": "Learning Engine Integrated (Background Observer)",
+    "type": "design",
+    "last_updated": "2026-05-03"
+  },
+  "MODE_INTEGRATION": {
+    "file": "MODE_INTEGRATION_VERIFIED.md",
+    "title": "Mode Integration Verified",
+    "type": "verification",
+    "last_updated": "2026-05-03"
+  },
+  "MICRO_STATE_PAPER": {
+    "file": "MICRO_STATE_PAPER_TRADING.md",
+    "title": "Micro-State Paper Trading",
+    "type": "design",
+    "last_updated": "2026-05-03"
+  },
+  "JARVIS_SPATIAL_UI": {
+    "file": "JARVIS-Style AR Interface Architecture.md",
+    "title": "JARVIS-Style AR Interface Architecture",
+    "type": "design",
+    "last_updated": "2026-05-03"
+  },
+  "SERENITY_AR_PHASE2": {
+    "file": "Serenity_AR_AI_Interface_Phase2.md",
+    "title": "Serenity AR AI Interface — Phase2",
+    "type": "design",
+    "last_updated": "2026-05-03"
+  },
+  "SUPPLEMENTAL_MAIN": {
+    "file": "supplemental/AlphaChart_v3_4.md",
+    "title": "AlphaChart v3.4 — Main Design Document",
+    "type": "design",
+    "last_updated": "2026-05-02"
+  },
+  "CONTINUATION_UPDATED": {
+    "file": "CONTINUATION_PROMPT_UPDATED.md",
+    "title": "Continuation Prompt (Updated Draft)",
+    "type": "core",
+    "last_updated": "2026-05-03"
+  },
+  "MAIN": {
+    "file": "supplemental/AlphaChart_v3_4.md",
+    "title": "AlphaChart v3.4 Main Design Document (Reference-Only)",
+    "type": "design",
+    "last_updated": "2026-05-02"
+  },
+  "SCRIPTS_MANUAL": {
+    "file": "scripts/list of commands for manual.MD",
+    "title": "List of Commands for Manual",
+    "type": "reference",
+    "last_updated": "2026-05-02"
+  },
+  "AC_00_MASTER": {
+    "file": "AC_00_Master_Orchestrator.md",
+    "title": "AC 00 — Master Orchestrator",
+    "type": "design",
+    "last_updated": "2026-05-02"
+  },
+  "AC_01_04_SIGNALS": {
+    "file": "AC_01_04_Signal_Engines.md",
+    "title": "AC 01-04 — Signal Engines",
+    "type": "design",
+    "last_updated": "2026-05-02"
+  },
+  "AC_05_08_SAFETY": {
+    "file": "AC_05_08_Safety_Risk.md",
+    "title": "AC 05-08 — Safety & Risk",
+    "type": "design",
+    "last_updated": "2026-05-02"
+  },
+  "AC_09_11_GUI": {
+    "file": "AC_09_11_Discovery_GUI.md",
+    "title": "AC 09-11 — Discovery & GUI",
+    "type": "design",
+    "last_updated": "2026-05-02"
+  },
+  "AC_12_14_LEARNING": {
+    "file": "AC_12_14_Learning_Orders_Backtest.md",
+    "title": "AC 12-14 — Learning, Orders & Backtest",
+    "type": "design",
+    "last_updated": "2026-05-02"
+  },
+  "STATUS_PHASE0": {
+    "file": "STATUS_PHASE0_V5.txt",
+    "title": "Phase0 Audit Status v5",
+    "type": "status",
+    "last_updated": "2026-05-02"
+  },
+  "ENHANCEMENT_SECTION": {
+    "file": "enhancement_section.txt",
+    "title": "Enhancement Section Notes",
+    "type": "notes",
+    "last_updated": "2026-05-03"
+  },
+  "ADDR_RESTORED": {
+    "file": "ADDR_RESTORED_20260503.md",
+    "title": "ADDR Restored 2026-05-03",
+    "type": "recovery",
+    "last_updated": "2026-05-03"
+  },
+  "ADDR_NEW": {
+    "file": "ADDR_new.md",
+    "title": "ADDR New Draft",
+    "type": "draft",
+    "last_updated": "2026-05-03"
+  },
+  "ADDR_TEMP": {
+    "file": "ADDR_temp.md",
+    "title": "ADDR Temp",
+    "type": "temp",
+    "last_updated": "2026-05-03"
+  },
+  "CORE_AGENTS_EXECUTOR": {
+    "file": "core/agents/executor_agent.py",
+    "title": "ExecutorAgent — Executes plans via tool orchestration",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "CORE_AGENTS_INIT": {
+    "file": "core/agents/__init__.py",
+    "title": "Agents Package Init — Exports All Agents (Updated)",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "CORE_MEMORY_EPISODIC": {
+    "file": "core/memory/episodic_store.py",
+    "title": "Episodic Memory Store (Layer 3) — GAAMA 4-Node Types + PPR + Hybrid Search",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "CORE_MEMORY_SEMANTIC": {
+    "file": "core/memory/semantic_graph.py",
+    "title": "Semantic Graph (Layer 4) — Kumiho + FluxMem",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "CORE_MEMORY_INIT": {
+    "file": "core/memory/__init__.py",
+    "title": "Memory Package Init — Exports All Layers",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "CORE_INTEGRATION_BRIDGE": {
+    "file": "core/integration/openhands_bridge.py",
+    "title": "OpenHands Bridge — Docker Sandbox Integration",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "CORE_INTEGRATION_INIT": {
+    "file": "core/integration/__init__.py",
+    "title": "Integration Package Init",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "CORE_MIND_OFFLOADER": {
+    "file": "core/mind/memory_offloader.py",
+    "title": "Memory Offloader — Context Window Optimization (FIXED)",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "LEARNING_RAG": {
+    "file": "core/learning/rag_memory.py",
+    "title": "RAG Memory Store — Trade Outcomes & Patterns",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "CORE_MEMORY_CONTEXT_TREE": {
+    "file": "core/memory/context_tree.py",
+    "title": "ByteRover Context Tree (Layer 3) — Hierarchical Memory with Importance Scoring",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "CORE_ADAPTIVE_WORLDDB": {
+    "file": "core/adaptive/worlddb_store.py",
+    "title": "WorldDB Recursive World Store (Layer 3) — Content-Addressed Nodes",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+  "CORE_ADAPTIVE_PARAMETRIC": {
+    "file": "core/adaptive/parametric_distiller.py",
+    "title": "MemVerse Parametric Memory (Layer 5) — Distillation & Fast Path Retrieval",
+    "type": "code",
+    "last_updated": "2026-05-03"
+  },
+   "CORE_ADAPTIVE_INIT": {
+     "file": "core/adaptive/__init__.py",
+     "title": "Adaptive Package Init — Exports WorldDB, MemVerse, FluxMem Modules",
+     "type": "code",
+     "last_updated": "2026-05-03"
+   },
+    "CORE_MCP_SERVER": {
+      "file": "core/mcp/alphachat_mcp_server.py",
+      "title": "AlphaChart MCP Server — IOCache Wired to alphachat_scan_market",
+      "type": "code",
+      "last_updated": "2026-05-03 (Session 24: syntax fixed)"
+    },
+    "MASTER_DESIGN_DOC": {
+      "file": "Serenity_Master_Design_Document.md",
+      "title": "Serenity Master Design Document — Jarvis-Level AI Assistant",
+      "type": "design",
+      "last_updated": "2026-05-03 (Session 28: Phase5)"
+    },
+    "DESIGN_CATALOG": {
+      "file": "Serenity_Design_Catalog.json",
+      "title": "Serenity Design Catalog — Searchable, Tagged JSON",
+      "type": "catalog",
+      "last_updated": "2026-05-03 (Session 28: Phase5)"
+    },
+    "LEARNING_LOG": {
+      "file": "LEARNING_LOG.md",
+      "title": "Learning Log — Session Analysis & Pattern Store",
+      "type": "learning",
+      "last_updated": "2026-05-03 (Session 27)"
+    },
+    "TEST_SUITE_ARCH": {
+      "file": "Test_Suite_Architecture.md",
+      "title": "Test Suite Architecture — Modular Swiss-Army-Knife Testing Framework",
+      "type": "design",
+      "last_updated": "2026-05-03 (Session 29)"
+    },
+    "SERVICE_MANUAL": {
+      "file": "SERVICE_MANUAL.md",
+      "title": "Service Manual — Maintenance, Deployment, Operations Guide",
+      "type": "manual",
+      "last_updated": "2026-05-03 (Session 30: 1 Sev Pass)"
+    },
+    "USER_MANUAL": {
+      "file": "USER_MANUAL.md",
+      "title": "User Manual — Quick Start, Features, FAQ",
+      "type": "manual",
+      "last_updated": "2026-05-03 (Session 30: 1 Sev Pass)"
+    },
+    "TEST_REGISTRY": {
+      "file": "docs/design doc viewer/test_registry.json",
+      "title": "Test Registry — Central Registry for All Tests (31 tests, 10 categories)",
+      "type": "registry",
+      "last_updated": "2026-05-04 (Session 31: Phase1)"
+    },
+    "CONFTEST": {
+      "file": "conftest.py",
+      "title": "Pytest Configuration — Fixtures for Test Suite",
+      "type": "config",
+      "last_updated": "2026-05-04 (Session 31: Phase1)"
+    },
+    "PYTEST_INI": {
+      "file": "pytest.ini",
+      "title": "Pytest INI — Test Paths, Markers, Options",
+      "type": "config",
+      "last_updated": "2026-05-04 (Session 31: Phase1)"
+    },
+    "TEST_DISCOVERY": {
+      "file": "test_discovery.py",
+      "title": "Test Discovery Script — Auto-Register Tests to Registry",
+      "type": "script",
+      "last_updated": "2026-05-04 (Session 31: Phase1)"
+    },
+    "TEST_MCP_TOOLS": {
+      "file": "test_mcp_tools.py",
+      "title": "MCP Tools Tests ? 8 tests for alphachat_mcp_server (8/8 PASS)",
+      "type": "test",
+      "last_updated": "2026-05-04 (Session 31: Phase1)"
+    },
+    "MICRO_LLM": {
+      "file": "MICRO_LLM_ENV.env",
+      "title": "Micro-LLM Environment ? ALPHACHART_MICRO_MODE=true, MICRITERATIONS=5",
+      "type": "config",
+      "last_updated": "2026-05-04 (Session 32: Micro-LLM Activation)"
+    },
+    "MICRO_LLMLM_MODULE": {
+      "file": "core/llm/micro_llm.py",
+      "title": "Micro-LLM Manager ? Atomic steps, high iteration, convergence detection",
+      "type": "module",
+      "last_updated": "2026-05-04 (Session 32: Micro-LLM Activation)"
+    },
+    "MICRO_MEMORYLAYERS_MODULE": {
+      "file": "core/llm/memory_layers.py",
+      "title": "Micro-LLM Memory Layers ? MicroStep + MicroLLMManager integration",
+      "type": "module",
+      "last_updated": "2026-05-04 (Session 32: Micro-LLM Activation)"
+    },
+    "DETERMINISTIC_EXECUTION_MODULE": {
+      "file": "docs/design doc viewer/DETERMINISTIC_EXECUTION_MODULE.md",
+      "title": "Deterministic Execution Module — Session Tracking System (Section 10)",
+      "type": "protocol",
+      "last_updated": "2026-05-04 (Session 34: State Repair)"
+    },
+    "DETERMINISTIC_SECTION_10": {
+      "file": "docs/design doc viewer/CONTINUATION_PROMPT.md#section10",
+      "title": "Deterministic Session Tracking — Section 10 Addition",
+      "type": "prompt",
+      "last_updated": "2026-05-04 (Session 34: State Repair)"
+    }
+  }

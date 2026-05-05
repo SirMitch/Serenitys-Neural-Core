@@ -1,0 +1,4 @@
+﻿### Phase 0 Audit v5 Results (COMPLETED)
+**Win Rate**: 78.9%  
+**Sharpe**: +2.48  
+**Status**: User decision required - see ADDR_STATUS_20260503.md

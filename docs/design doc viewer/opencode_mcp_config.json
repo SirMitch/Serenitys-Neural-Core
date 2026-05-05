@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.schema.json",
+  "mcp": {
+    "alphachart": {
+      "command": "python",
+      "args": ["alphachart_mcp_server.py"],
+      "env": {
+        "ALPHACHART_DOCS": "."
+      }
+    }
+  }
+}

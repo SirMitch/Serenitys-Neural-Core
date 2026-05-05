@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "version": "2.1",
+    "description": "ADDR State Machine - Deterministic Session Execution Control",
+    "last_synced": "2026-05-04T04:09:59"
+  },
+  "session_tracking": {
+    "current_session_id": 35,
+    "dev_pass_last_run": 34,
+    "learning_pass_last_run": null,
+    "learning_collect_buffer": [
+      {"session": 31, "summary": "Test Suite Phase1 COMPLETE (31 tests, 8/8 MCP PASS)"},
+      {"session": 32, "summary": "Micro-LLM Mode ACTIVATED — atomic steps enabled"},
+      {"session": 33, "summary": "ExecutorAgent + Alert Bar UI integration complete"},
+      {"session": 34, "summary": "All agents validated + convergence detection verified"}
+    ]
+  },
+  "global_state": {
+    "latest_session_complete": true,
+    "micro_llm_mode_active": true,
+    "non_micro_llm_mode_active": false,
+    "adr_integration_enabled": true,
+    "failsafe_triggers_applied": true,
+    "session_34_completed": true,
+    "session_35_completed": true,
+    "guardian_agent_integrated": true,
+    "session_log": [
+      {"session": 32, "entry": "Micro-LLM architecture implemented"},
+      {"session": 33, "entry": "ExecutorAgent integrated + Alert Bar UI wired"},
+      {"session": 34, "entry": "All agents verified with convergence detection"},
+      {"session": 35, "entry": "Performance charts + GuardianAgent integrated"}
+    ]
+  }
+}
+}

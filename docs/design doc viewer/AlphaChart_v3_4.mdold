@@ -1,0 +1,2062 @@
+# AlphaChart v3.4 — Comprehensive Design Document
+
+---
+
+## Table of Contents
+
+1. [Executive Summary](#1-executive-summary)
+2. [Key Architectural Decisions (v3.4)](#2-key-architectural-decisions-v34)
+3. [User Configuration System — BIOS-Style](#3-user-configuration-system--bios-style)
+4. [Portfolio Integration & Scanning](#4-portfolio-integration--scanning)
+5. [Updated Architecture & Data Flow](#5-updated-architecture--data-flow)
+6. [Core Engines](#6-core-engines)
+7. [LLM Intelligence Layer](#7-llm-intelligence-layer)
+8. [Learning & Adaptation Engine](#8-learning--adaptation-engine)
+9. [Risk & Position Sizing Logic](#9-risk--position-sizing-logic)
+10. [GUI & Paper Trading Layer](#10-gui--paper-trading-layer)
+11. [Updated Implementation Roadmap](#11-updated-implementation-roadmap)
+12. [Backtest Hygiene Rules & Non-Negotiable Constraints](#12-backtest-hygiene-rules--non-negotiable-constraints)
+13. [Success Criteria](#13-success-criteria)
+
+---
+
+## 1. Executive Summary
+
+AlphaChart v3.4 is a self-improving, multi-timeframe, ensemble-based algorithmic paper trading system designed to achieve a **minimum 60% prediction success rate** on paper trades, with an aspirational target of **80–90%+**. The system trains and orchestrates multiple prediction engines — including FinRL-X reinforcement learning agents, a multi-timeframe technical analysis stack, and a LLM-based quality evaluator operating as a senior quant analyst — within a rigorous backtesting and risk-management framework.
+
+Version 3.4 introduces six major advances over v3.3:
+
+- **FinRL-X treated as expert signal input** to a hedge-fund-style multi-model ensemble
+- **Full multi-timeframe processing** (3mo → intraday) with higher-timeframe anchoring
+- **Continuous per-ticker and cross-ticker learning** via RLHF/RLMF and RAG memory
+- **User-configurable growth target slider** (default: $10k → $100k / year) that dynamically modulates strategy aggressiveness within hard safety envelopes
+- **BIOS-style GUI** with General (easy) and Advanced modes for all configuration
+- **Automated portfolio and watchlist scanning** with live paper trading integration (Alpaca primary, IBKR fallback)
+
+Phase 0 Backtest Audit (7-step protocol) remains the **hard blocking gate** — no model proceeds to live paper trading without passing it.
+
+---
+
+## 2. Key Architectural Decisions (v3.4)
+
+- **FinRL-X Elevation:** FinRL-X outputs are no longer treated as primary signals. They are one expert input within a hedge-fund-style multi-model ensemble. The LLM layer synthesizes FinRL-X outputs alongside regime detectors, multi-timeframe trend filters, and ML factor models — exactly as a quantitative portfolio manager would review signals from a systematic sub-strategy.
+- **Multi-Timeframe Stack:** A six-tier timeframe hierarchy (3mo, 1mo, 2wk, 1wk, daily, intraday) is implemented. Higher timeframes set directional bias and regime context; shorter timeframes provide entry/exit timing. Predictions are labeled by timeframe with explicit confidence decay at higher horizons.
+- **LLM as Senior Quant, Not Voter:** The LLM layer is reframed as a quality evaluator and synthesis engine — it does not cast directional votes. It reads the full signal dossier (multi-timeframe summary, FinRL-X outputs, regime state, risk metrics) and returns a structured quality score, a risk flag, and a synthesis narrative. This eliminates the directional-voting failure mode from v3.3.
+- **Continuous RLMF + RAG Learning:** The system records every trade outcome, labels it, and feeds it back into both the FinRL-X agents (reward shaping) and a persistent RAG vector store. Per-ticker and cross-ticker pattern libraries accumulate over time and are retrievable at inference.
+- **Growth Target Slider:** A single master aggressiveness parameter, set via GUI slider, gates conviction thresholds, position sizing curves, and minimum quality scores — all bounded by immutable hard safety limits.
+- **BIOS-Style GUI:** Two-tier UI: General Mode (clean, slider-based dashboard) and Advanced Mode (full parameter control over all subsystems). Streamlit implementation with tabs, expanders, and real-time status panels.
+- **Portfolio Auto-Scan:** Alpaca API integration for live portfolio reads. All held tickers and watchlist tickers are automatically queued for signal generation on each run cycle.
+- **Regime-Conditional Ensemble:** The ensemble weighting matrix is conditioned on detected market regime (TRENDING_UP, TRENDING_DOWN, RANGING, VOLATILE). Each regime has a separate calibrated weight vector. TREND_DOWN models are subject to additional scrutiny per v3.3 remediation rules.
+- **Scoped State-Lock & Deterministic Safety Layer:** All inference paths pass through a deterministic rule-based safety filter before any order is staged. State-lock prevents conflicting signals from being acted upon simultaneously.
+- **RSI Ablation Protocol Retained:** RSI-only signals are blocked. RSI is only used in multi-factor confirmation contexts.
+
+---
+
+## 3. User Configuration System — BIOS-Style
+
+### 3.1 Design Philosophy
+
+The GUI configuration system is modeled on computer BIOS architecture: a **General Mode** (analogous to BIOS "Easy Mode") and an **Advanced Mode** (analogous to BIOS full configuration). Users enter General Mode by default. Advanced Mode is unlocked via a clearly labeled toggle/tab.
+
+---
+
+### 3.2 General Mode — Controls
+
+**Growth Target Slider (Master Control)**
+
+```
+Label:  "Annual Growth Target"
+Range:  $10,000 → $1,000,000  (log-scale)
+Default: $100,000  (i.e., $10k → $100k = 10x / year)
+Display: Shows implied monthly return %, required win-rate,
+         and current aggressiveness tier (Conservative / Moderate / Aggressive / Max)
+```
+
+The slider maps to an **Aggressiveness Index (AI)** on a 0.0–1.0 scale:
+
+| Slider Target (from $10k) | AI Value | Tier |
+|---|---|---|
+| $20k–$30k (2x–3x) | 0.0–0.25 | Conservative |
+| $40k–$60k (4x–6x) | 0.25–0.55 | Moderate |
+| $70k–$100k (7x–10x) | 0.55–0.80 | Aggressive |
+| $100k–$1M (10x–100x) | 0.80–1.0 | Max (warnings shown) |
+
+**Other General Mode Controls:**
+
+| Control | Description | Default |
+|---|---|---|
+| Max Drawdown Tolerance | Portfolio-level stop | 15% |
+| Max Single-Trade Risk | % of portfolio per trade | 3% |
+| Auto-Trade vs. Approve | Auto-execute or require click-approval | Approve |
+| Scan Interval | How often portfolio/watchlist is scanned | 15 min |
+| Watchlist Tickers | Free-text + CSV import | — |
+| Paper Broker | Alpaca / IBKR selector | Alpaca |
+
+---
+
+### 3.3 Advanced Mode — Controls
+
+Advanced Mode exposes per-subsystem tuning. Each section is a collapsible expander in the GUI.
+
+**Prediction Engine Weights**
+
+```python
+ADVANCED_ENSEMBLE_WEIGHTS = {
+    "finrl_x":            slider(0.0, 1.0, default=0.30),
+    "multi_tf_trend":     slider(0.0, 1.0, default=0.25),
+    "regime_detector":    slider(0.0, 1.0, default=0.20),
+    "ml_factor_model":    slider(0.0, 1.0, default=0.15),
+    "llm_quality_gate":   slider(0.0, 1.0, default=0.10),
+}
+# Weights are L1-normalized at runtime; user sees raw sliders, system normalizes
+```
+
+**Timeframe Priority Overrides**
+
+```python
+TIMEFRAME_PRIORITY = {
+    "3mo":     slider(0.0, 1.0, default=0.90),   # trend anchor weight
+    "1mo":     slider(0.0, 1.0, default=0.80),
+    "2wk":     slider(0.0, 1.0, default=0.70),
+    "1wk":     slider(0.0, 1.0, default=0.60),
+    "daily":   slider(0.0, 1.0, default=0.50),
+    "intraday":slider(0.0, 1.0, default=1.00),   # execution weight
+}
+```
+
+**Conviction & Quality Thresholds**
+
+```python
+THRESHOLDS = {
+    "min_conviction_score":      slider(0.50, 0.95, default=0.70),
+    "min_llm_quality_score":     slider(0.50, 0.95, default=0.65),
+    "min_backtest_sharpe":       slider(0.5, 3.0,   default=1.0),
+    "min_backtest_win_rate":     slider(0.50, 0.90,  default=0.60),
+    "regime_filter_strictness":  select(["OFF","SOFT","HARD"], default="SOFT"),
+}
+```
+
+**Learning Rate Controls**
+
+```python
+LEARNING = {
+    "rag_decay_half_life_days":  slider(7, 365,  default=90),
+    "rlmf_reward_scale":         slider(0.1, 5.0, default=1.0),
+    "cross_ticker_weight":       slider(0.0, 1.0, default=0.30),
+    "per_ticker_weight":         slider(0.0, 1.0, default=0.70),
+    "memory_max_entries":        int_input(100, 100000, default=10000),
+}
+```
+
+**Agent Parameters (FinRL-X)**
+
+```python
+FINRL_X = {
+    "ppo_learning_rate":         float_input(default=3e-4),
+    "ppo_n_steps":               int_input(default=2048),
+    "training_window_days":      slider(30, 730, default=252),
+    "retrain_trigger_drawdown":  slider(0.05, 0.30, default=0.10),
+    "ensemble_agent_count":      slider(1, 10, default=3),
+}
+```
+
+---
+
+### 3.4 Aggressiveness Index (AI) — Dynamic Parameter Mapping
+
+The AI value computed from the Growth Target Slider drives the following parameters at runtime. Hard limits are **immutable** — the AI cannot override them.
+
+```python
+def apply_aggressiveness(ai: float, config: dict) -> dict:
+    """
+    ai: float [0.0, 1.0]
+    Maps AI to operational parameters, enforcing hard limits.
+    """
+    config["conviction_threshold"]   = lerp(0.80, 0.60, ai)   # lower = more trades
+    config["position_size_pct"]      = min(lerp(0.01, 0.05, ai), HARD_MAX_RISK_PCT)
+    config["min_quality_score"]      = lerp(0.80, 0.55, ai)
+    config["stop_loss_atr_mult"]     = lerp(2.5, 1.5, ai)
+    config["profit_target_rr"]       = lerp(1.5, 3.5, ai)
+    config["max_concurrent_trades"]  = int(lerp(2, 10, ai))
+
+    # Hard limits — never overridable
+    assert config["position_size_pct"]     <= HARD_MAX_RISK_PCT     # 5%
+    assert config["max_portfolio_drawdown"] <= HARD_MAX_DRAWDOWN     # 20%
+    return config
+
+def lerp(a, b, t):
+    return a + (b - a) * t
+```
+
+---
+
+## 4. Portfolio Integration & Scanning
+
+### 4.1 Broker Connection
+
+**Primary: Alpaca Markets**
+
+```python
+import alpaca_trade_api as tradeapi
+
+class AlpacaConnector:
+    def __init__(self, api_key, secret_key, base_url):
+        self.api = tradeapi.REST(api_key, secret_key, base_url)
+
+    def get_portfolio_tickers(self) -> list[str]:
+        positions = self.api.list_positions()
+        return [p.symbol for p in positions]
+
+    def get_account_equity(self) -> float:
+        account = self.api.get_account()
+        return float(account.equity)
+
+    def submit_paper_order(self, symbol, qty, side, order_type="market",
+                           time_in_force="day", limit_price=None):
+        return self.api.submit_order(
+            symbol=symbol, qty=qty, side=side,
+            type=order_type, time_in_force=time_in_force,
+            limit_price=limit_price
+        )
+
+    def get_open_orders(self) -> list:
+        return self.api.list_orders(status="open")
+
+    def cancel_order(self, order_id: str):
+        self.api.cancel_order(order_id)
+```
+
+**Fallback: IBKR via ib_insync**
+
+```python
+from ib_insync import IB, Stock, MarketOrder, LimitOrder
+
+class IBKRConnector:
+    def __init__(self, host="127.0.0.1", port=7497, client_id=1):
+        self.ib = IB()
+        self.ib.connect(host, port, clientId=client_id)
+
+    def get_portfolio_tickers(self) -> list[str]:
+        positions = self.ib.positions()
+        return [p.contract.symbol for p in positions]
+
+    def submit_paper_order(self, symbol, qty, side, limit_price=None):
+        contract = Stock(symbol, "SMART", "USD")
+        if limit_price:
+            order = LimitOrder(side.upper(), qty, limit_price)
+        else:
+            order = MarketOrder(side.upper(), qty)
+        trade = self.ib.placeOrder(contract, order)
+        return trade
+```
+
+---
+
+### 4.2 Portfolio Scanning Engine
+
+```python
+class PortfolioScanner:
+    def __init__(self, broker_connector, watchlist: list[str],
+                 scan_interval_minutes: int = 15):
+        self.broker = broker_connector
+        self.watchlist = watchlist
+        self.scan_interval = scan_interval_minutes
+        self.signal_queue = []
+
+    def get_scan_universe(self) -> list[str]:
+        portfolio_tickers = self.broker.get_portfolio_tickers()
+        all_tickers = list(set(portfolio_tickers + self.watchlist))
+        return sorted(all_tickers)
+
+    def run_scan_cycle(self, signal_pipeline) -> list[dict]:
+        universe = self.get_scan_universe()
+        signals = []
+        for ticker in universe:
+            try:
+                signal = signal_pipeline.generate_signal(ticker)
+                signals.append(signal)
+            except Exception as e:
+                log_error(f"[SCAN] {ticker} failed: {e}")
+        self.signal_queue = sorted(signals,
+            key=lambda x: x["conviction_score"], reverse=True)
+        return self.signal_queue
+
+    def schedule(self, signal_pipeline):
+        """Runs run_scan_cycle every scan_interval minutes."""
+        import schedule, time
+        schedule.every(self.scan_interval).minutes.do(
+            self.run_scan_cycle, signal_pipeline)
+        while True:
+            schedule.run_pending()
+            time.sleep(30)
+```
+
+---
+
+### 4.3 Signal Prioritization & Presentation
+
+After each scan cycle, signals are ranked by **Conviction Score** and filtered by the **Active Quality Gate**. The GUI presents a prioritized signal table:
+
+| Rank | Ticker | Direction | Timeframe | Conviction | Quality Score | Regime | Action |
+|---|---|---|---|---|---|---|---|
+| 1 | NVDA | LONG | Daily | 0.87 | 0.82 | TRENDING_UP | [Approve] |
+| 2 | AAPL | SHORT | Daily | 0.73 | 0.71 | RANGING | [Approve] |
+| ... | | | | | | | |
+
+Signals below threshold are shown in a separate "Below Threshold" panel (collapsed by default) for transparency.
+
+---
+
+## 5. Updated Architecture & Data Flow
+
+### 5.1 System Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      ALPHACHART v3.4                            │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │                  GUI LAYER (Streamlit)                    │  │
+│  │   [BIOS Config] [Portfolio Dashboard] [Signal Table]     │  │
+│  │   [Trade Log]   [Performance Charts]  [Learning Stats]   │  │
+│  └──────────────────────┬───────────────────────────────────┘  │
+│                         │                                       │
+│  ┌──────────────────────▼───────────────────────────────────┐  │
+│  │             ORCHESTRATION LAYER                           │  │
+│  │  PortfolioScanner → SignalPipeline → OrderManager        │  │
+│  │  ConfigManager (AI Slider) → RiskGuard → StateManager    │  │
+│  └──┬──────────────────┬──────────────────┬─────────────────┘  │
+│     │                  │                  │                     │
+│  ┌──▼──────┐  ┌────────▼──────┐  ┌───────▼───────────────┐   │
+│  │ DATA    │  │  CORE ENGINES │  │  SAFETY & RISK LAYER   │   │
+│  │ LAYER   │  │               │  │                         │   │
+│  │         │  │ FinRL-X       │  │ DeterministicSafety    │   │
+│  │ yfinance│  │ MultiTF Stack │  │ PositionSizer          │   │
+│  │ Alpaca  │  │ RegimeDetector│  │ DrawdownGuard          │   │
+│  │ IBKR    │  │ MLFactorModel │  │ StateLock              │   │
+│  │ Cache   │  │ LLMQualityGate│  │                         │   │
+│  └──┬──────┘  └────────┬──────┘  └───────────────────────┘   │
+│     │                  │                                        │
+│  ┌──▼──────────────────▼──────────────────────────────────┐   │
+│  │            LEARNING & MEMORY LAYER                       │   │
+│  │  RAGMemory (ChromaDB) │ RLMFEngine │ BacktestAuditor    │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 5.2 Signal Generation Data Flow
+
+```
+INPUT: ticker, config (AI-modulated)
+  │
+  ├─► [1] DataFetcher
+  │       → fetch OHLCV: 3mo, 1mo, 2wk, 1wk, daily, 60m, 15m
+  │       → fetch fundamentals, news sentiment (optional)
+  │       → cache with TTL per timeframe
+  │
+  ├─► [2] MultiTimeframeAnalyzer
+  │       → compute per-timeframe: trend direction, momentum, structure
+  │       → produce: TimeframeContext object (anchor bias + execution context)
+  │
+  ├─► [3] RegimeDetector
+  │       → classify: TRENDING_UP / TRENDING_DOWN / RANGING / VOLATILE
+  │       → select regime-conditional ensemble weight vector
+  │
+  ├─► [4] FinRL-X Engine
+  │       → run trained PPO/SAC agents on current state vector
+  │       → output: action probabilities, Q-values, agent confidence
+  │       → tag as "expert signal" — not final decision
+  │
+  ├─► [5] MLFactorModel
+  │       → compute: momentum, mean-reversion, vol-adjusted factors
+  │       → output: factor score vector
+  │
+  ├─► [6] EnsembleAggregator
+  │       → apply regime-conditional weights to all signals
+  │       → compute: raw_conviction_score [0,1]
+  │
+  ├─► [7] DeterministicSafetyFilter
+  │       → apply hard rules (gap filter, earnings blackout, etc.)
+  │       → block or pass signal
+  │
+  ├─► [8] LLMQualityGate
+  │       → send full signal dossier to LLM
+  │       → receive: quality_score, risk_flags, narrative
+  │       → if quality_score < min_quality_score: REJECT
+  │
+  ├─► [9] PositionSizer
+  │       → compute: position_size, stop_loss, profit_target
+  │       → apply AI-modulated sizing curve
+  │
+  └─► OUTPUT: TradingSignal object → OrderQueue / GUI
+```
+
+---
+
+### 5.3 Core Data Objects
+
+```python
+from dataclasses import dataclass, field
+from typing import Optional
+from enum import Enum
+
+class Direction(Enum):
+    LONG  = "LONG"
+    SHORT = "SHORT"
+    FLAT  = "FLAT"
+
+class Regime(Enum):
+    TRENDING_UP   = "TRENDING_UP"
+    TRENDING_DOWN = "TRENDING_DOWN"
+    RANGING       = "RANGING"
+    VOLATILE      = "VOLATILE"
+
+@dataclass
+class TimeframeContext:
+    timeframe: str                  # "3mo", "1mo", "2wk", "1wk", "daily", "intraday"
+    trend_direction: Direction
+    trend_strength: float           # 0.0–1.0
+    key_levels: list[float]         # support/resistance
+    momentum_score: float           # -1.0 to +1.0
+    structure_intact: bool          # higher-high/lower-low structure
+    confidence: float               # degrades at higher timeframes
+
+@dataclass
+class FinRLXOutput:
+    agent_id: str
+    action_probs: dict              # {"BUY": 0.7, "SELL": 0.1, "HOLD": 0.2}
+    q_value: float
+    agent_confidence: float
+    regime_trained_on: Regime
+
+@dataclass
+class TradingSignal:
+    ticker: str
+    direction: Direction
+    timeframe: str
+    conviction_score: float         # 0.0–1.0
+    quality_score: float            # from LLM gate
+    regime: Regime
+    position_size_pct: float
+    stop_loss_price: float
+    profit_target_price: float
+    entry_price: float
+    risk_flags: list[str]
+    narrative: str                  # LLM synthesis
+    timeframe_contexts: list[TimeframeContext]
+    finrl_x_outputs: list[FinRLXOutput]
+    approved: bool = False
+    order_id: Optional[str] = None
+    timestamp: str = ""
+```
+
+---
+
+## 6. Core Engines
+
+### 6.1 Data Fetcher
+
+```python
+import yfinance as yf
+import pandas as pd
+from functools import lru_cache
+import hashlib, time
+
+TIMEFRAME_MAP = {
+    "3mo":      {"period": "3mo",  "interval": "1d"},
+    "1mo":      {"period": "1mo",  "interval": "1d"},
+    "2wk":      {"period": "60d",  "interval": "1d"},
+    "1wk":      {"period": "30d",  "interval": "1d"},
+    "daily":    {"period": "1y",   "interval": "1d"},
+    "60m":      {"period": "30d",  "interval": "60m"},
+    "15m":      {"period": "7d",   "interval": "15m"},
+}
+
+TTL_SECONDS = {
+    "3mo": 86400, "1mo": 86400, "2wk": 3600,
+    "1wk": 3600,  "daily": 900, "60m": 300, "15m": 60
+}
+
+class DataFetcher:
+    def __init__(self):
+        self._cache = {}
+
+    def fetch(self, ticker: str, timeframe: str) -> pd.DataFrame:
+        cache_key = f"{ticker}_{timeframe}"
+        now = time.time()
+        if cache_key in self._cache:
+            data, ts = self._cache[cache_key]
+            if now - ts < TTL_SECONDS[timeframe]:
+                return data
+        params = TIMEFRAME_MAP[timeframe]
+        df = yf.download(ticker, period=params["period"],
+                         interval=params["interval"],
+                         auto_adjust=True, progress=False)
+        df.dropna(inplace=True)
+        self._cache[cache_key] = (df, now)
+        return df
+
+    def fetch_all_timeframes(self, ticker: str) -> dict[str, pd.DataFrame]:
+        return {tf: self.fetch(ticker, tf) for tf in TIMEFRAME_MAP}
+```
+
+---
+
+### 6.2 Multi-Timeframe Analyzer
+
+The multi-timeframe analyzer enforces the **higher-timeframe-as-anchor** discipline. A LONG entry signal is only valid if the daily and weekly timeframes do not show an active TRENDING_DOWN regime. Intraday signals provide timing; weekly/monthly signals provide permission.
+
+```python
+import ta  # technical analysis library
+
+class MultiTimeframeAnalyzer:
+
+    CONFIDENCE_DECAY = {
+        "3mo": 0.50, "1mo": 0.60, "2wk": 0.70,
+        "1wk": 0.75, "daily": 0.85, "intraday": 0.95
+    }
+
+    def analyze(self, ticker: str,
+                all_data: dict[str, pd.DataFrame]) -> list[TimeframeContext]:
+        contexts = []
+        for tf, df in all_data.items():
+            if df.empty or len(df) < 20:
+                continue
+            ctx = self._analyze_single(tf, df)
+            contexts.append(ctx)
+        return contexts
+
+    def _analyze_single(self, timeframe: str,
+                        df: pd.DataFrame) -> TimeframeContext:
+        close = df["Close"]
+        high  = df["High"]
+        low   = df["Low"]
+
+        # Trend detection: EMA 20/50 relationship
+        ema20 = ta.trend.EMAIndicator(close, window=20).ema_indicator()
+        ema50 = ta.trend.EMAIndicator(close, window=50).ema_indicator()
+        last_ema20 = ema20.iloc[-1]
+        last_ema50 = ema50.iloc[-1]
+
+        if last_ema20 > last_ema50 * 1.005:
+            trend = Direction.LONG
+        elif last_ema20 < last_ema50 * 0.995:
+            trend = Direction.SHORT
+        else:
+            trend = Direction.FLAT
+
+        # Trend strength: ADX
+        adx = ta.trend.ADXIndicator(high, low, close).adx()
+        strength = min(float(adx.iloc[-1]) / 50.0, 1.0)
+
+        # Momentum: MACD histogram normalized
+        macd = ta.trend.MACD(close)
+        hist = macd.macd_diff().iloc[-1]
+        atr  = ta.volatility.AverageTrueRange(high, low, close).average_true_range().iloc[-1]
+        momentum = float(hist / atr) if atr > 0 else 0.0
+        momentum = max(-1.0, min(1.0, momentum))
+
+        # Key levels: recent swing highs/lows (simplified)
+        key_levels = self._compute_key_levels(df)
+
+        # Structure: higher-highs / lower-lows check
+        recent_highs = high.rolling(5).max()
+        structure_intact = bool(
+            (trend == Direction.LONG  and recent_highs.iloc[-1] > recent_highs.iloc[-5]) or
+            (trend == Direction.SHORT and low.rolling(5).min().iloc[-1] < low.rolling(5).min().iloc[-5]) or
+            trend == Direction.FLAT
+        )
+
+        return TimeframeContext(
+            timeframe=timeframe,
+            trend_direction=trend,
+            trend_strength=strength,
+            key_levels=key_levels,
+            momentum_score=momentum,
+            structure_intact=structure_intact,
+            confidence=self.CONFIDENCE_DECAY.get(timeframe, 0.70)
+        )
+
+    def _compute_key_levels(self, df: pd.DataFrame,
+                            window: int = 20) -> list[float]:
+        highs = df["High"].rolling(window).max().dropna().unique()
+        lows  = df["Low"].rolling(window).min().dropna().unique()
+        levels = sorted(set(list(highs[-3:]) + list(lows[-3:])))
+        return levels
+
+    def get_anchor_bias(self, contexts: list[TimeframeContext]) -> Direction:
+        """
+        Higher-timeframe consensus (3mo, 1mo, 1wk) determines anchor bias.
+        LONG entries blocked if anchor bias is SHORT/FLAT with strong conviction.
+        """
+        anchor_tfs = ["3mo", "1mo", "1wk"]
+        anchor_ctxs = [c for c in contexts if c.timeframe in anchor_tfs]
+        if not anchor_ctxs:
+            return Direction.FLAT
+        votes = {"LONG": 0.0, "SHORT": 0.0, "FLAT": 0.0}
+        for ctx in anchor_ctxs:
+            weight = ctx.confidence * ctx.trend_strength
+            votes[ctx.trend_direction.value] += weight
+        return Direction[max(votes, key=votes.get)]
+```
+
+---
+
+### 6.3 Regime Detector
+
+```python
+class RegimeDetector:
+
+    def detect(self, df_daily: pd.DataFrame) -> Regime:
+        close = df_daily["Close"]
+        high  = df_daily["High"]
+        low   = df_daily["Low"]
+
+        adx = ta.trend.ADXIndicator(high, low, close).adx().iloc[-1]
+        ema20 = ta.trend.EMAIndicator(close, 20).ema_indicator().iloc[-1]
+        ema50 = ta.trend.EMAIndicator(close, 50).ema_indicator().iloc[-1]
+        bb    = ta.volatility.BollingerBands(close)
+        bb_width = (bb.bollinger_hband() - bb.bollinger_lband()) / close
+        vol_ratio = float(bb_width.iloc[-1] / bb_width.rolling(20).mean().iloc[-1])
+
+        if vol_ratio > 1.5:
+            return Regime.VOLATILE
+        if adx > 25:
+            return Regime.TRENDING_UP if ema20 > ema50 else Regime.TRENDING_DOWN
+        return Regime.RANGING
+
+    def get_ensemble_weights(self, regime: Regime) -> dict[str, float]:
+        """
+        Per-regime calibrated ensemble weights.
+        TRENDING_DOWN applies extra penalty to LONG-biased models.
+        """
+        weights = {
+            Regime.TRENDING_UP:   {"finrl_x": 0.30, "multi_tf": 0.30,
+                                   "ml_factor": 0.20, "regime_score": 0.20},
+            Regime.TRENDING_DOWN: {"finrl_x": 0.20, "multi_tf": 0.40,
+                                   "ml_factor": 0.20, "regime_score": 0.20},
+            Regime.RANGING:       {"finrl_x": 0.25, "multi_tf": 0.20,
+                                   "ml_factor": 0.35, "regime_score": 0.20},
+            Regime.VOLATILE:      {"finrl_x": 0.15, "multi_tf": 0.25,
+                                   "ml_factor": 0.20, "regime_score": 0.40},
+        }
+        return weights[regime]
+```
+
+---
+
+### 6.4 FinRL-X Engine
+
+FinRL-X is treated as an **expert sub-strategy signal source** within the ensemble — equivalent to how a hedge fund treats a systematic sub-pod's output. The FinRL-X agents are trained per-regime and per-ticker cluster. Their action probabilities and Q-values are features fed into the ensemble, not final trade decisions.
+
+```python
+from finrl.agents.stablebaselines3.models import DRLAgent
+from finrl.meta.env_stock_trading.env_stocktrading import StockTradingEnv
+import numpy as np
+
+class FinRLXEngine:
+    """
+    Wraps multiple FinRL-X PPO/SAC agents (one per regime).
+    Agents are loaded from checkpoint. Inference only during live operation.
+    Retraining triggered by performance degradation or schedule.
+    """
+
+    def __init__(self, agent_checkpoints: dict[Regime, str]):
+        self.agents = {}
+        for regime, path in agent_checkpoints.items():
+            self.agents[regime] = self._load_agent(path)
+
+    def _load_agent(self, checkpoint_path: str):
+        from stable_baselines3 import PPO
+        return PPO.load(checkpoint_path)
+
+    def get_signal(self, regime: Regime,
+                   state_vector: np.ndarray) -> FinRLXOutput:
+        agent = self.agents.get(regime)
+        if agent is None:
+            return self._null_output(regime)
+
+        action, _ = agent.predict(state_vector, deterministic=True)
+        # Get action probabilities from policy distribution
+        obs_tensor = agent.policy.obs_to_tensor(
+            state_vector.reshape(1, -1))[0]
+        dist = agent.policy.get_distribution(obs_tensor)
+        probs = dist.distribution.probs.detach().numpy()[0]
+        action_labels = ["SELL", "HOLD", "BUY"]
+        action_probs = {a: float(p) for a, p in zip(action_labels, probs)}
+
+        return FinRLXOutput(
+            agent_id=f"ppo_{regime.value}",
+            action_probs=action_probs,
+            q_value=float(probs.max()),
+            agent_confidence=float(probs.max() - probs.min()),
+            regime_trained_on=regime
+        )
+
+    def _null_output(self, regime: Regime) -> FinRLXOutput:
+        return FinRLXOutput(
+            agent_id="null",
+            action_probs={"BUY": 0.33, "HOLD": 0.34, "SELL": 0.33},
+            q_value=0.0, agent_confidence=0.0,
+            regime_trained_on=regime
+        )
+
+    def build_state_vector(self, df: pd.DataFrame,
+                           timeframe_contexts: list[TimeframeContext],
+                           regime: Regime) -> np.ndarray:
+        """
+        Constructs the state vector passed to FinRL-X agents.
+        Features: price ratios, volume, ATR-normalized momentum,
+        EMA spreads, regime encoding, multi-TF momentum summary.
+        """
+        close = df["Close"]
+        features = []
+
+        # Price momentum
+        for window in [5, 10, 20, 50]:
+            ret = (close.iloc[-1] / close.iloc[-window] - 1)
+            features.append(float(ret))
+
+        # Volume ratio
+        vol_ma = df["Volume"].rolling(20).mean().iloc[-1]
+        features.append(float(df["Volume"].iloc[-1] / vol_ma))
+
+        # ATR normalized
+        atr = ta.volatility.AverageTrueRange(
+            df["High"], df["Low"], close).average_true_range().iloc[-1]
+        features.append(float(atr / close.iloc[-1]))
+
+        # Multi-TF momentum summary
+        for ctx in sorted(timeframe_contexts,
+                          key=lambda x: x.confidence):
+            features.append(float(ctx.momentum_score))
+            features.append(float(ctx.trend_strength))
+
+        # Regime one-hot
+        regime_encoding = [0.0, 0.0, 0.0, 0.0]
+        regime_idx = list(Regime).index(regime)
+        regime_encoding[regime_idx] = 1.0
+        features.extend(regime_encoding)
+
+        return np.array(features, dtype=np.float32)
+
+    def retrain(self, regime: Regime, training_df: pd.DataFrame,
+                config: dict):
+        """
+        Retrains the agent for the specified regime using recent data.
+        Called by the Learning Engine on performance degradation trigger.
+        """
+        env = StockTradingEnv(df=training_df, **config["env_kwargs"])
+        agent = DRLAgent(env=env)
+        model = agent.get_model("ppo", model_kwargs=config["ppo_kwargs"])
+        trained = agent.train_model(
+            model=model, tb_log_name=f"ppo_{regime.value}",
+            total_timesteps=config.get("total_timesteps", 50000)
+        )
+        self.agents[regime] = trained
+        return trained
+```
+
+---
+
+### 6.5 ML Factor Model
+
+```python
+from sklearn.ensemble import GradientBoostingClassifier
+import joblib
+
+class MLFactorModel:
+    """
+    Gradient boosting classifier trained on engineered factor features.
+    Outputs probability of positive return over prediction horizon.
+    Trained offline; retrained on RLMF trigger.
+    """
+
+    def __init__(self, model_path: str):
+        self.model = joblib.load(model_path)
+
+    def compute_features(self, df: pd.DataFrame) -> np.ndarray:
+        close = df["Close"]
+        high  = df["High"]
+        low   = df["Low"]
+        vol   = df["Volume"]
+
+        # Momentum factors
+        mom_5  = close.pct_change(5).iloc[-1]
+        mom_20 = close.pct_change(20).iloc[-1]
+        mom_60 = close.pct_change(60).iloc[-1] if len(df) > 60 else 0.0
+
+        # Mean-reversion factor
+        zscore_20 = (close.iloc[-1] - close.rolling(20).mean().iloc[-1]) / \
+                    (close.rolling(20).std().iloc[-1] + 1e-9)
+
+        # Volatility factor
+        realized_vol = close.pct_change().rolling(20).std().iloc[-1]
+        hist_vol_ratio = realized_vol / (close.pct_change().rolling(60).std().iloc[-1] + 1e-9)
+
+        # Volume factor
+        vol_surge = vol.iloc[-1] / (vol.rolling(20).mean().iloc[-1] + 1e-9)
+
+        # Range factor: today's range vs ATR
+        today_range = (high.iloc[-1] - low.iloc[-1])
+        atr = ta.volatility.AverageTrueRange(high, low, close).average_true_range().iloc[-1]
+        range_factor = today_range / (atr + 1e-9)
+
+        return np.array([
+            mom_5, mom_20, mom_60, zscore_20,
+            realized_vol, hist_vol_ratio, vol_surge, range_factor
+        ], dtype=np.float32)
+
+    def predict_score(self, df: pd.DataFrame) -> float:
+        """Returns probability of positive outcome [0, 1]."""
+        features = self.compute_features(df).reshape(1, -1)
+        prob = self.model.predict_proba(features)[0][1]
+        return float(prob)
+```
+
+---
+
+### 6.6 Ensemble Aggregator
+
+```python
+class EnsembleAggregator:
+    def aggregate(self,
+                  finrl_x_output: FinRLXOutput,
+                  multi_tf_contexts: list[TimeframeContext],
+                  regime: Regime,
+                  ml_factor_score: float,
+                  regime_weights: dict,
+                  direction_constraint: Direction,
+                  user_weights: dict = None) -> tuple[float, Direction]:
+        """
+        Computes unified conviction score and direction.
+        Returns (conviction_score, direction).
+        """
+        # FinRL-X score: BUY probability for LONG conviction
+        frl_buy_prob  = finrl_x_output.action_probs.get("BUY",  0.33)
+        frl_sell_prob = finrl_x_output.action_probs.get("SELL", 0.33)
+        frl_score = frl_buy_prob - frl_sell_prob  # range: -1 to +1
+
+        # Multi-TF weighted momentum
+        tf_score = 0.0
+        tf_weight_sum = 0.0
+        for ctx in multi_tf_contexts:
+            w = ctx.confidence * ctx.trend_strength
+            tf_score += ctx.momentum_score * w
+            tf_weight_sum += w
+        tf_score = tf_score / tf_weight_sum if tf_weight_sum > 0 else 0.0
+
+        # ML Factor score: centered to -1..+1
+        ml_score = (ml_factor_score - 0.5) * 2.0
+
+        # Regime confidence score (from regime strength)
+        regime_score = 0.5  # neutral placeholder; override with regime model output
+
+        w = user_weights or regime_weights
+        # Normalize weights
+        total_w = sum(w.values())
+        wn = {k: v / total_w for k, v in w.items()}
+
+        raw = (wn["finrl_x"]   * frl_score +
+               wn["multi_tf"]  * tf_score  +
+               wn["ml_factor"] * ml_score  +
+               wn["regime_score"] * regime_score)
+
+        # Determine direction
+        direction = Direction.LONG if raw > 0 else (
+                    Direction.SHORT if raw < 0 else Direction.FLAT)
+
+        # Enforce higher-timeframe anchor constraint
+        if direction_constraint == Direction.SHORT and direction == Direction.LONG:
+            raw *= 0.40  # Penalty for fighting higher-TF trend
+        if direction_constraint == Direction.LONG and direction == Direction.SHORT:
+            raw *= 0.40
+
+        conviction = min(abs(raw), 1.0)
+        return conviction, direction
+```
+
+---
+
+### 6.7 Deterministic Safety Filter
+
+The safety filter applies rule-based hard blocks. It runs **before** the LLM gate and **before** any order is staged. Rules are immutable — they cannot be disabled by any user configuration.
+
+```python
+from datetime import datetime, timedelta
+import pandas_market_calendars as mcal
+
+class DeterministicSafetyFilter:
+    EARNINGS_BLACKOUT_DAYS = 2
+
+    def __init__(self, earnings_calendar: dict):
+        self.earnings_calendar = earnings_calendar  # {ticker: [date, ...]}
+
+    def check(self, ticker: str, signal: dict,
+              df_daily: pd.DataFrame) -> tuple[bool, list[str]]:
+        """
+        Returns (passed: bool, block_reasons: list[str])
+        """
+        blocks = []
+
+        # 1. Earnings blackout
+        today = datetime.today().date()
+        for edate in self.earnings_calendar.get(ticker, []):
+            if abs((edate - today).days) <= self.EARNINGS_BLACKOUT_DAYS:
+                blocks.append(f"EARNINGS_BLACKOUT: {edate}")
+
+        # 2. Gap filter — no entries after >3% overnight gap
+        if len(df_daily) >= 2:
+            prev_close = df_daily["Close"].iloc[-2]
+            today_open = df_daily["Open"].iloc[-1]
+            gap_pct = abs(today_open / prev_close - 1)
+            if gap_pct > 0.03:
+                blocks.append(f"GAP_FILTER: {gap_pct:.1%} overnight gap")
+
+        # 3. Liquidity — require min average volume
+        avg_vol = df_daily["Volume"].rolling(20).mean().iloc[-1]
+        if avg_vol < 500_000:
+            blocks.append(f"LOW_LIQUIDITY: avg_vol={avg_vol:.0f}")
+
+        # 4. Halted / suspended check (via broker API flag)
+        if signal.get("market_status") == "HALTED":
+            blocks.append("MARKET_HALTED")
+
+        # 5. Weekend / market-closed check
+        nyse = mcal.get_calendar("NYSE")
+        schedule = nyse.schedule(start_date=today, end_date=today)
+        if schedule.empty:
+            blocks.append("MARKET_CLOSED")
+
+        # 6. Max concurrent trades check (handled in OrderManager, not here)
+
+        passed = len(blocks) == 0
+        return passed, blocks
+```
+
+---
+
+## 7. LLM Intelligence Layer
+
+### 7.1 Role: Senior Quantitative Analyst
+
+The LLM layer in v3.4 does **not** cast directional votes. Its role is precisely that of a senior quantitative analyst reviewing a trade committee dossier:
+
+- **Evaluate signal quality** — does the evidence cohesively support the proposed trade?
+- **Identify risk flags** — conflicting timeframes, regime mismatches, over-reliance on single signals, known failure modes
+- **Synthesize a narrative** — a concise, auditable explanation of why the trade passes or fails quality review
+- **Return a structured score** — not a direction, a quality assessment
+
+This eliminates the directional-voting failure mode and removes the LLM from the critical decision path for direction, while keeping it in the loop for quality gating.
+
+---
+
+### 7.2 LLM Quality Gate
+
+```python
+import anthropic
+import json
+
+SYSTEM_PROMPT = """
+You are a senior quantitative analyst at a top-tier hedge fund.
+You are reviewing a proposed algorithmic trade signal dossier.
+Your job is NOT to decide trade direction — the ensemble models have already done that.
+Your job is to evaluate the QUALITY and COHERENCE of the signal evidence.
+
+You will return a structured JSON evaluation with:
+- quality_score: float [0.0, 1.0] — overall signal quality
+- confidence_in_quality: float [0.0, 1.0] — how confident you are in your evaluation
+- risk_flags: list[str] — any red flags (be specific)
+- key_strengths: list[str] — what supports the trade thesis
+- key_weaknesses: list[str] — what undermines it
+- narrative: str — one concise paragraph (max 100 words) summarizing your evaluation
+- recommendation: str — one of: "APPROVE", "APPROVE_WITH_CAUTION", "REJECT"
+
+You are rigorous, skeptical, and data-driven. You penalize:
+- Single-factor signals (RSI alone, volume alone)
+- Higher-timeframe conflict with proposed direction
+- Regime mismatch between trained model and current conditions
+- Low FinRL-X agent confidence combined with low ML factor score
+- Recent prediction failures on this ticker in the memory context
+
+You reward:
+- Multi-timeframe alignment
+- High FinRL-X confidence in the current regime
+- Strong factor confirmation
+- Historical success patterns from RAG memory
+"""
+
+class LLMQualityGate:
+    def __init__(self, model: str = "claude-opus-4-6"):
+        self.client = anthropic.Anthropic()
+        self.model = model
+
+    def evaluate(self, ticker: str,
+                 proposed_direction: Direction,
+                 conviction_score: float,
+                 multi_tf_contexts: list[TimeframeContext],
+                 finrl_x_output: FinRLXOutput,
+                 ml_factor_score: float,
+                 regime: Regime,
+                 rag_memory_context: str,
+                 risk_flags_pre: list[str]) -> dict:
+
+        dossier = self._build_dossier(
+            ticker, proposed_direction, conviction_score,
+            multi_tf_contexts, finrl_x_output, ml_factor_score,
+            regime, rag_memory_context, risk_flags_pre
+        )
+
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=800,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": dossier}]
+        )
+
+        raw = response.content[0].text
+        try:
+            result = json.loads(raw)
+        except json.JSONDecodeError:
+            # Fallback: extract JSON block
+            import re
+            match = re.search(r'\{.*\}', raw, re.DOTALL)
+            result = json.loads(match.group()) if match else self._default_reject()
+
+        return result
+
+    def _build_dossier(self, ticker, direction, conviction,
+                       contexts, finrl_x, ml_score, regime,
+                       rag_context, pre_flags) -> str:
+        tf_summary = "\n".join([
+            f"  {c.timeframe}: {c.trend_direction.value} "
+            f"(strength={c.trend_strength:.2f}, momentum={c.momentum_score:.2f}, "
+            f"confidence={c.confidence:.2f})"
+            for c in sorted(contexts, key=lambda x: x.confidence, reverse=True)
+        ])
+        return f"""
+=== TRADE SIGNAL DOSSIER ===
+Ticker: {ticker}
+Proposed Direction: {direction.value}
+Ensemble Conviction Score: {conviction:.3f}
+Current Market Regime: {regime.value}
+
+=== MULTI-TIMEFRAME ANALYSIS ===
+{tf_summary}
+
+=== FinRL-X EXPERT SIGNAL ===
+Agent: {finrl_x.agent_id}
+Action Probabilities: {finrl_x.action_probs}
+Agent Confidence: {finrl_x.agent_confidence:.3f}
+Regime Trained On: {finrl_x.regime_trained_on.value}
+
+=== ML FACTOR MODEL ===
+Factor Score (probability of positive return): {ml_score:.3f}
+
+=== PRE-FILTER RISK FLAGS ===
+{chr(10).join(pre_flags) if pre_flags else "None"}
+
+=== HISTORICAL MEMORY CONTEXT (RAG) ===
+{rag_context}
+
+=== YOUR TASK ===
+Evaluate the quality of this signal and return your structured JSON assessment.
+Do not decide direction. Evaluate quality and coherence of the evidence.
+"""
+
+    def _default_reject(self) -> dict:
+        return {
+            "quality_score": 0.0,
+            "confidence_in_quality": 0.0,
+            "risk_flags": ["LLM_PARSE_FAILURE"],
+            "key_strengths": [],
+            "key_weaknesses": ["Could not parse LLM response"],
+            "narrative": "LLM evaluation failed; signal rejected by default.",
+            "recommendation": "REJECT"
+        }
+```
+
+---
+
+### 7.3 Quality Gate Decision Logic
+
+```python
+class SignalQualityDecision:
+    def decide(self, llm_result: dict,
+               conviction_score: float,
+               config: dict) -> tuple[bool, str]:
+        """
+        Returns (approved: bool, reason: str).
+        """
+        quality = llm_result.get("quality_score", 0.0)
+        rec     = llm_result.get("recommendation", "REJECT")
+        flags   = llm_result.get("risk_flags", [])
+
+        min_quality = config["min_quality_score"]
+        min_conv    = config["conviction_threshold"]
+
+        if rec == "REJECT":
+            return False, f"LLM_REJECT: quality={quality:.2f}"
+
+        if quality < min_quality:
+            return False, f"QUALITY_BELOW_THRESHOLD: {quality:.2f} < {min_quality:.2f}"
+
+        if conviction_score < min_conv:
+            return False, f"CONVICTION_BELOW_THRESHOLD: {conviction_score:.2f}"
+
+        # Critical flags always block
+        critical_flags = [
+            "REGIME_MISMATCH", "EARNINGS_BLACKOUT",
+            "EXTREME_VOLATILITY", "CIRCUIT_BREAKER"
+        ]
+        for flag in flags:
+            if any(cf in flag for cf in critical_flags):
+                return False, f"CRITICAL_FLAG: {flag}"
+
+        return True, "APPROVED"
+```
+
+---
+
+## 8. Learning & Adaptation Engine
+
+### 8.1 Architecture
+
+The learning engine has three interconnected components:
+
+1. **RAG Memory Store** — ChromaDB vector store of trade outcomes, patterns, and market contexts
+2. **RLMF Engine** — Reward shaping feedback from trade outcomes to FinRL-X agents
+3. **ML Model Retrainer** — Scheduled and performance-triggered retraining of the ML factor model and FinRL-X agents
+
+---
+
+### 8.2 RAG Memory Store
+
+```python
+import chromadb
+from chromadb.utils import embedding_functions
+import json
+from datetime import datetime
+
+class RAGMemoryStore:
+    def __init__(self, persist_path: str = "./alphachart_memory"):
+        self.client = chromadb.PersistentClient(path=persist_path)
+        self.embed_fn = embedding_functions.DefaultEmbeddingFunction()
+        self.collection = self.client.get_or_create_collection(
+            name="trade_memory",
+            embedding_function=self.embed_fn
+        )
+
+    def record_outcome(self, signal: TradingSignal,
+                       outcome: dict):
+        """
+        Records completed trade with outcome for future retrieval.
+        outcome = {
+            "pnl_pct": float,
+            "won": bool,
+            "hold_duration_days": int,
+            "exit_reason": str,
+            "actual_regime_at_exit": str
+        }
+        """
+        doc_text = (
+            f"Ticker: {signal.ticker} | Direction: {signal.direction.value} | "
+            f"Regime: {signal.regime.value} | Conviction: {signal.conviction_score:.3f} | "
+            f"Quality: {signal.quality_score:.3f} | "
+            f"TF_Contexts: {[(c.timeframe, c.trend_direction.value) for c in signal.timeframe_contexts]} | "
+            f"Outcome: {'WIN' if outcome['won'] else 'LOSS'} | "
+            f"PnL: {outcome['pnl_pct']:.2%} | "
+            f"Hold: {outcome['hold_duration_days']}d | "
+            f"Exit: {outcome['exit_reason']}"
+        )
+        metadata = {
+            "ticker":      signal.ticker,
+            "direction":   signal.direction.value,
+            "regime":      signal.regime.value,
+            "won":         str(outcome["won"]),
+            "pnl_pct":     str(outcome["pnl_pct"]),
+            "timestamp":   datetime.utcnow().isoformat(),
+            "conviction":  str(signal.conviction_score),
+        }
+        doc_id = f"{signal.ticker}_{signal.timestamp}_{datetime.utcnow().timestamp()}"
+        self.collection.add(
+            documents=[doc_text],
+            metadatas=[metadata],
+            ids=[doc_id]
+        )
+
+    def retrieve_context(self, ticker: str, regime: Regime,
+                         direction: Direction,
+                         n_results: int = 5) -> str:
+        """
+        Retrieves relevant historical patterns for LLM dossier.
+        Cross-ticker learning: also retrieves regime-matched patterns
+        from other tickers.
+        """
+        query = (
+            f"Ticker {ticker} {direction.value} trade in {regime.value} regime"
+        )
+        results = self.collection.query(
+            query_texts=[query],
+            n_results=n_results,
+            where={"regime": regime.value}  # regime-filtered
+        )
+        if not results["documents"] or not results["documents"][0]:
+            return "No relevant historical memory available."
+
+        lines = []
+        for doc, meta in zip(results["documents"][0],
+                             results["metadatas"][0]):
+            lines.append(
+                f"[{'SAME_TICKER' if meta['ticker'] == ticker else 'CROSS_TICKER'}] "
+                f"{doc}"
+            )
+        return "\n".join(lines)
+
+    def get_ticker_win_rate(self, ticker: str,
+                            last_n: int = 20) -> float:
+        results = self.collection.query(
+            query_texts=[f"Trade on {ticker}"],
+            n_results=last_n,
+            where={"ticker": ticker}
+        )
+        if not results["metadatas"] or not results["metadatas"][0]:
+            return 0.0
+        wins = sum(1 for m in results["metadatas"][0]
+                   if m.get("won") == "True")
+        return wins / len(results["metadatas"][0])
+```
+
+---
+
+### 8.3 RLMF Engine
+
+```python
+class RLMFEngine:
+    """
+    Reward shaping for FinRL-X agents based on realized trade outcomes.
+    Implements a simple experience replay buffer that feeds back to FinRL-X
+    training on retrain events.
+    """
+
+    def __init__(self, reward_scale: float = 1.0):
+        self.reward_scale = reward_scale
+        self.experience_buffer = []  # list of (state, action, reward, next_state)
+
+    def compute_reward(self, outcome: dict,
+                       signal: TradingSignal) -> float:
+        """
+        Reward function combining:
+        - realized PnL (primary)
+        - quality score alignment (did high quality = high PnL?)
+        - regime correctness
+        """
+        base_reward = outcome["pnl_pct"] * 100  # scale pct to reasonable range
+
+        # Alignment bonus: reward when high quality score correlated with win
+        if outcome["won"] and signal.quality_score > 0.75:
+            base_reward += 0.5
+        elif not outcome["won"] and signal.quality_score > 0.75:
+            base_reward -= 0.5  # penalty for confident wrong calls
+
+        # Regime match bonus
+        if signal.regime.value == outcome.get("actual_regime_at_exit"):
+            base_reward += 0.2
+
+        return float(base_reward * self.reward_scale)
+
+    def record_experience(self, state: np.ndarray,
+                          action: int,
+                          reward: float,
+                          next_state: np.ndarray):
+        self.experience_buffer.append((state, action, reward, next_state))
+        # Rolling buffer: keep last 50,000 experiences
+        if len(self.experience_buffer) > 50_000:
+            self.experience_buffer.pop(0)
+
+    def get_replay_batch(self, batch_size: int = 256) -> list:
+        import random
+        if len(self.experience_buffer) < batch_size:
+            return self.experience_buffer
+        return random.sample(self.experience_buffer, batch_size)
+```
+
+---
+
+### 8.4 Retraining Trigger Logic
+
+```python
+class RetrainingController:
+    def __init__(self, finrl_x: FinRLXEngine,
+                 ml_model: MLFactorModel,
+                 config: dict):
+        self.finrl_x  = finrl_x
+        self.ml_model = ml_model
+        self.config   = config
+        self.performance_window = []
+
+    def record_result(self, won: bool, pnl_pct: float):
+        self.performance_window.append({"won": won, "pnl": pnl_pct})
+        if len(self.performance_window) > 50:
+            self.performance_window.pop(0)
+
+    def should_retrain(self) -> tuple[bool, str]:
+        if len(self.performance_window) < 20:
+            return False, "INSUFFICIENT_DATA"
+
+        recent = self.performance_window[-20:]
+        win_rate = sum(1 for r in recent if r["won"]) / len(recent)
+        total_pnl = sum(r["pnl"] for r in recent)
+
+        if win_rate < 0.45:
+            return True, f"WIN_RATE_DEGRADED: {win_rate:.1%}"
+        if total_pnl < self.config.get("retrain_pnl_threshold", -0.15):
+            return True, f"PNL_DEGRADED: {total_pnl:.1%}"
+
+        return False, "PERFORMANCE_OK"
+
+    def trigger_retrain(self, regime: Regime,
+                        training_data: pd.DataFrame):
+        trigger, reason = self.should_retrain()
+        if trigger:
+            print(f"[RETRAIN] Triggering retraining: {reason}")
+            self.finrl_x.retrain(regime, training_data, self.config)
+            return True
+        return False
+```
+
+---
+
+## 9. Risk & Position Sizing Logic
+
+### 9.1 Hard Safety Limits (Immutable)
+
+These constants are defined at system level and cannot be overridden by any user configuration, slider, or API call:
+
+```python
+# ==========================================
+# HARD SAFETY LIMITS — NEVER MODIFY AT RUNTIME
+# ==========================================
+HARD_MAX_RISK_PCT           = 0.05   # 5% of portfolio per trade
+HARD_MAX_PORTFOLIO_DRAWDOWN = 0.20   # 20% portfolio drawdown triggers full halt
+HARD_MAX_CONCURRENT_TRADES  = 15     # absolute maximum open positions
+HARD_MIN_STOP_LOSS_ATR_MULT = 1.0    # stop must be at least 1 ATR from entry
+HARD_MAX_SECTOR_CONCENTRATION = 0.40 # no sector > 40% of portfolio
+HARD_MIN_LIQUIDITY_VOLUME   = 500_000  # min avg daily volume
+HARD_EARNINGS_BLACKOUT_DAYS = 2      # no entries within 2 days of earnings
+```
+
+---
+
+### 9.2 Position Sizer
+
+```python
+class PositionSizer:
+    def __init__(self, broker_connector, hard_limits: dict):
+        self.broker = broker_connector
+        self.limits = hard_limits
+
+    def compute(self, ticker: str,
+                entry_price: float,
+                stop_loss_price: float,
+                conviction_score: float,
+                config: dict) -> dict:
+        """
+        Returns position sizing dict:
+        {shares, position_value, risk_amount, stop_pct, profit_target}
+        """
+        equity = self.broker.get_account_equity()
+        risk_per_trade_pct = min(
+            config["position_size_pct"],
+            self.limits["HARD_MAX_RISK_PCT"]
+        )
+        risk_amount = equity * risk_per_trade_pct
+
+        stop_distance = abs(entry_price - stop_loss_price)
+        if stop_distance < 0.01:
+            stop_distance = entry_price * 0.01  # min 1% stop
+
+        shares = int(risk_amount / stop_distance)
+        position_value = shares * entry_price
+
+        # Kelly-scaled conviction (half-Kelly for safety)
+        kelly_fraction = conviction_score - 0.5  # rough Kelly numerator
+        kelly_scale = max(0.2, min(1.0, kelly_fraction * 2))  # half-Kelly
+        shares = max(1, int(shares * kelly_scale))
+        position_value = shares * entry_price
+
+        # Max position check
+        max_position = equity * self.limits["HARD_MAX_RISK_PCT"] * 5
+        if position_value > max_position:
+            shares = int(max_position / entry_price)
+            position_value = shares * entry_price
+
+        # Profit target: RR ratio from config
+        rr = config["profit_target_rr"]
+        if entry_price > stop_loss_price:  # LONG
+            profit_target = entry_price + (stop_distance * rr)
+        else:  # SHORT
+            profit_target = entry_price - (stop_distance * rr)
+
+        return {
+            "shares":          shares,
+            "position_value":  position_value,
+            "risk_amount":     risk_amount,
+            "stop_loss":       stop_loss_price,
+            "profit_target":   profit_target,
+            "stop_pct":        stop_distance / entry_price,
+            "rr_ratio":        rr
+        }
+```
+
+---
+
+### 9.3 Portfolio-Level Risk Guard
+
+```python
+class DrawdownGuard:
+    def __init__(self, broker_connector, config: dict):
+        self.broker = broker_connector
+        self.config = config
+        self.peak_equity = None
+
+    def update_and_check(self) -> tuple[bool, str]:
+        """
+        Returns (trading_allowed: bool, status: str)
+        """
+        equity = self.broker.get_account_equity()
+        if self.peak_equity is None or equity > self.peak_equity:
+            self.peak_equity = equity
+
+        drawdown = (self.peak_equity - equity) / self.peak_equity
+
+        if drawdown >= HARD_MAX_PORTFOLIO_DRAWDOWN:
+            return False, f"HARD_HALT: drawdown={drawdown:.1%} >= {HARD_MAX_PORTFOLIO_DRAWDOWN:.0%}"
+
+        soft_limit = self.config.get("max_drawdown_tolerance", 0.15)
+        if drawdown >= soft_limit:
+            return False, f"SOFT_HALT: drawdown={drawdown:.1%} >= {soft_limit:.0%}"
+
+        return True, f"OK: drawdown={drawdown:.1%}, equity=${equity:,.0f}"
+```
+
+---
+
+## 10. GUI & Paper Trading Layer
+
+### 10.1 Layout Overview
+
+The GUI is built in **Streamlit**. Navigation uses a sidebar for mode selection and a main panel with tabs for each major function.
+
+```
+Sidebar:
+├── [AlphaChart Logo + v3.4]
+├── [● CONNECTED / ✕ DISCONNECTED] — broker status
+├── [General Mode] / [Advanced Mode] — toggle
+├── ─────────────────────────────
+├── [▶ Start Scan]
+├── [⏸ Pause Scan]
+├── [🔴 Emergency Stop All]
+└── [System Health] — mini panel
+
+Main Panel Tabs:
+├── 📊 Dashboard
+├── 📡 Signals
+├── 📁 Portfolio
+├── 📈 Performance
+├── ⚙️  Configuration
+└── 🧠 Learning Stats
+```
+
+---
+
+### 10.2 Dashboard Tab
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  ALPHACHART v3.4  |  Paper Trading  |  Alpaca Connected  |  LIVE │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  ┌────────┐ │
+│  │  Portfolio   │  │  Win Rate   │  │  Drawdown    │  │ Signals│ │
+│  │  $12,450     │  │  67.3%      │  │  -4.2%       │  │ 3 New  │ │
+│  │  ▲ +$450     │  │  Last 30    │  │  ✅ Safe     │  │ Queue  │ │
+│  └─────────────┘  └─────────────┘  └──────────────┘  └────────┘ │
+│                                                                   │
+│  GROWTH TARGET SLIDER                                             │
+│  $10k ─────────────[●]──────────────────────── $1M              │
+│         Target: $100,000/yr  │  Tier: Aggressive (AI=0.72)       │
+│         Implied Monthly: +21% │  Required Win Rate: ~62%         │
+│                                                                   │
+│  RECENT SIGNALS ─────────────────────────────────────────────── │
+│  NVDA  LONG  Daily  Conv:0.84  Qual:0.79  ✅ APPROVED            │
+│  AAPL  LONG  Daily  Conv:0.71  Qual:0.67  ⏳ PENDING REVIEW      │
+│  TSLA  SHORT Daily  Conv:0.58  Qual:0.54  ❌ BELOW THRESHOLD     │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 10.3 Signals Tab
+
+The Signals tab shows the full ranked signal table with expandable rows:
+
+```python
+# Streamlit implementation sketch
+import streamlit as st
+
+def render_signals_tab(signals: list[dict], config: dict):
+    st.subheader("📡 Active Signals")
+
+    # Filter controls
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        show_below = st.checkbox("Show Below-Threshold", value=False)
+    with col2:
+        direction_filter = st.multiselect("Direction",
+            ["LONG", "SHORT", "FLAT"], default=["LONG", "SHORT"])
+    with col3:
+        regime_filter = st.multiselect("Regime",
+            ["TRENDING_UP", "TRENDING_DOWN", "RANGING", "VOLATILE"],
+            default=["TRENDING_UP", "RANGING"])
+
+    for sig in signals:
+        if sig["direction"] not in direction_filter:
+            continue
+        if sig["regime"] not in regime_filter:
+            continue
+        if not show_below and sig["conviction_score"] < config["conviction_threshold"]:
+            continue
+
+        with st.expander(
+            f"{sig['ticker']} | {sig['direction']} | "
+            f"Conv: {sig['conviction_score']:.2f} | "
+            f"Qual: {sig['quality_score']:.2f} | {sig['regime']}"
+        ):
+            col_a, col_b, col_c = st.columns(3)
+            with col_a:
+                st.metric("Entry", f"${sig['entry_price']:.2f}")
+                st.metric("Stop", f"${sig['stop_loss_price']:.2f}")
+            with col_b:
+                st.metric("Target", f"${sig['profit_target_price']:.2f}")
+                st.metric("Position Size",
+                          f"{sig['position_size_pct']*100:.1f}%")
+            with col_c:
+                st.metric("Shares", str(sig.get("shares", "—")))
+                st.metric("Risk $", f"${sig.get('risk_amount', 0):,.0f}")
+
+            st.markdown(f"**Narrative:** {sig['narrative']}")
+
+            if sig.get("risk_flags"):
+                st.warning("Risk Flags: " + " | ".join(sig["risk_flags"]))
+
+            # Multi-TF Summary
+            st.markdown("**Timeframe Context:**")
+            tf_data = {ctx["timeframe"]: ctx["trend_direction"]
+                       for ctx in sig.get("timeframe_contexts", [])}
+            st.json(tf_data)
+
+            # Approve / Reject buttons
+            col_btn1, col_btn2, _ = st.columns([1, 1, 4])
+            with col_btn1:
+                if st.button(f"✅ Approve", key=f"approve_{sig['ticker']}"):
+                    st.session_state.approved_signals.append(sig)
+                    st.success(f"Queued {sig['ticker']} for execution")
+            with col_btn2:
+                if st.button(f"❌ Reject", key=f"reject_{sig['ticker']}"):
+                    st.info(f"Rejected {sig['ticker']}")
+```
+
+---
+
+### 10.4 Configuration Tab (BIOS-Style)
+
+```python
+def render_config_tab(config: dict) -> dict:
+    mode = st.radio("Configuration Mode",
+                    ["⚡ General (Easy Mode)", "🔧 Advanced Mode"],
+                    horizontal=True)
+
+    st.divider()
+
+    if "General" in mode:
+        st.subheader("📊 Growth Target")
+        target = st.select_slider(
+            "Annual Portfolio Growth Target",
+            options=[10000, 20000, 30000, 50000,
+                     75000, 100000, 150000, 250000,
+                     500000, 750000, 1000000],
+            value=100000,
+            format_func=lambda x: f"${x:,}"
+        )
+        starting_equity = st.number_input("Starting Capital ($)", value=10000)
+        ai_value = compute_ai_from_target(starting_equity, target)
+        tier = get_tier_label(ai_value)
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Aggressiveness", f"{ai_value:.2f} — {tier}")
+        col2.metric("Implied Monthly Return",
+                    f"{((target/starting_equity)**(1/12)-1)*100:.1f}%")
+        col3.metric("Min Win Rate Required",
+                    f"{estimate_min_win_rate(ai_value)*100:.0f}%")
+
+        if ai_value > 0.80:
+            st.error("⚠️ MAX AGGRESSIVENESS: Risk of significant loss. "
+                     "Hard safety limits still apply.")
+
+        config["max_drawdown_tolerance"] = st.slider(
+            "Max Drawdown Tolerance", 0.05, 0.20, 0.15,
+            format="%.0f%%", step=0.01)
+        config["max_single_trade_risk"]  = st.slider(
+            "Max Single-Trade Risk", 0.01, 0.05, 0.03,
+            format="%.0f%%", step=0.005)
+        config["auto_trade"] = st.toggle(
+            "Auto-Execute (no approval required)", value=False)
+        config["scan_interval"] = st.slider(
+            "Scan Interval (minutes)", 1, 60, 15)
+
+    else:
+        # Advanced Mode — expanders per subsystem
+        with st.expander("🎯 Ensemble Weights"):
+            # ... per-subsystem weight sliders
+            pass
+        with st.expander("⏱ Timeframe Priorities"):
+            # ... per-timeframe sliders
+            pass
+        with st.expander("🎚 Conviction & Quality Thresholds"):
+            # ... threshold sliders
+            pass
+        with st.expander("🧠 Learning Parameters"):
+            # ... RLMF and RAG controls
+            pass
+        with st.expander("🤖 FinRL-X Agent Parameters"):
+            # ... agent config
+            pass
+
+    return config
+```
+
+---
+
+### 10.5 Performance Tab
+
+```python
+def render_performance_tab(trade_log: list[dict]):
+    import plotly.graph_objects as go
+    import plotly.express as px
+
+    st.subheader("📈 Performance Analytics")
+
+    # KPI row
+    total_trades  = len(trade_log)
+    wins          = sum(1 for t in trade_log if t["won"])
+    win_rate      = wins / total_trades if total_trades else 0
+    total_pnl     = sum(t["pnl_pct"] for t in trade_log)
+    avg_win       = (sum(t["pnl_pct"] for t in trade_log if t["won"])
+                     / max(wins, 1))
+    avg_loss      = (sum(t["pnl_pct"] for t in trade_log if not t["won"])
+                     / max(total_trades - wins, 1))
+    profit_factor = abs(avg_win * wins / (avg_loss * (total_trades - wins) + 1e-9))
+
+    cols = st.columns(5)
+    cols[0].metric("Total Trades", total_trades)
+    cols[1].metric("Win Rate",   f"{win_rate:.1%}")
+    cols[2].metric("Total P&L",  f"{total_pnl:.1%}")
+    cols[3].metric("Avg Win",    f"{avg_win:.2%}")
+    cols[4].metric("Profit Factor", f"{profit_factor:.2f}")
+
+    # Equity curve
+    equity_curve = []
+    eq = 1.0
+    for t in trade_log:
+        eq *= (1 + t["pnl_pct"])
+        equity_curve.append(eq)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        y=equity_curve, mode="lines",
+        name="Portfolio", line=dict(color="#00C851", width=2)
+    ))
+    fig.update_layout(title="Equity Curve", height=300,
+                      paper_bgcolor="rgba(0,0,0,0)",
+                      plot_bgcolor="rgba(0,0,0,0)")
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Win rate by regime and ticker
+    col_r, col_t = st.columns(2)
+    with col_r:
+        regime_stats = {}
+        for t in trade_log:
+            r = t.get("regime", "UNKNOWN")
+            regime_stats.setdefault(r, {"wins": 0, "total": 0})
+            regime_stats[r]["total"] += 1
+            if t["won"]:
+                regime_stats[r]["wins"] += 1
+        fig2 = px.bar(
+            x=list(regime_stats.keys()),
+            y=[v["wins"]/max(v["total"],1) for v in regime_stats.values()],
+            title="Win Rate by Regime", labels={"y": "Win Rate", "x": "Regime"}
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+    with col_t:
+        ticker_stats = {}
+        for t in trade_log:
+            ticker = t.get("ticker", "?")
+            ticker_stats.setdefault(ticker, {"wins": 0, "total": 0})
+            ticker_stats[ticker]["total"] += 1
+            if t["won"]:
+                ticker_stats[ticker]["wins"] += 1
+        top_tickers = sorted(ticker_stats.items(),
+                             key=lambda x: x[1]["total"], reverse=True)[:10]
+        fig3 = px.bar(
+            x=[t[0] for t in top_tickers],
+            y=[t[1]["wins"]/max(t[1]["total"],1) for t in top_tickers],
+            title="Win Rate by Ticker (Top 10)"
+        )
+        st.plotly_chart(fig3, use_container_width=True)
+```
+
+---
+
+### 10.6 Order Management Flow
+
+```python
+class OrderManager:
+    def __init__(self, broker_connector,
+                 drawdown_guard: DrawdownGuard,
+                 state_lock: dict):
+        self.broker = broker_connector
+        self.guard  = drawdown_guard
+        self.state_lock = state_lock  # {ticker: bool}
+
+    def execute_signal(self, signal: TradingSignal,
+                       sizing: dict) -> dict:
+        """
+        Executes approved signal as paper trade.
+        Returns order result.
+        """
+        # 1. Drawdown guard check
+        allowed, status = self.guard.update_and_check()
+        if not allowed:
+            return {"status": "BLOCKED", "reason": status}
+
+        # 2. State lock check — prevent duplicate orders
+        if self.state_lock.get(signal.ticker, False):
+            return {"status": "BLOCKED", "reason": "STATE_LOCKED"}
+        self.state_lock[signal.ticker] = True
+
+        # 3. Submit order
+        try:
+            side = "buy" if signal.direction == Direction.LONG else "sell"
+            result = self.broker.submit_paper_order(
+                symbol    = signal.ticker,
+                qty       = sizing["shares"],
+                side      = side,
+                order_type= "limit",
+                limit_price= round(signal.entry_price * 1.002, 2)
+                              if side == "buy"
+                              else round(signal.entry_price * 0.998, 2),
+                time_in_force="day"
+            )
+            signal.order_id  = str(result.id)
+            signal.approved  = True
+            return {"status": "SUBMITTED", "order_id": signal.order_id,
+                    "details": result}
+        except Exception as e:
+            self.state_lock[signal.ticker] = False
+            return {"status": "ERROR", "reason": str(e)}
+
+    def monitor_and_manage(self, open_signals: list[TradingSignal],
+                           current_prices: dict):
+        """
+        Checks open positions against stop/target.
+        Submits close orders when hit.
+        """
+        for sig in open_signals:
+            price = current_prices.get(sig.ticker)
+            if price is None:
+                continue
+
+            if sig.direction == Direction.LONG:
+                if price <= sig.stop_loss_price:
+                    self._close_position(sig, price, "STOP_LOSS")
+                elif price >= sig.profit_target_price:
+                    self._close_position(sig, price, "PROFIT_TARGET")
+            elif sig.direction == Direction.SHORT:
+                if price >= sig.stop_loss_price:
+                    self._close_position(sig, price, "STOP_LOSS")
+                elif price <= sig.profit_target_price:
+                    self._close_position(sig, price, "PROFIT_TARGET")
+
+    def _close_position(self, sig: TradingSignal,
+                        exit_price: float, reason: str):
+        side = "sell" if sig.direction == Direction.LONG else "buy"
+        self.broker.submit_paper_order(
+            symbol=sig.ticker, qty=1,  # use actual shares from order
+            side=side, order_type="market"
+        )
+        self.state_lock[sig.ticker] = False
+        log_exit(sig, exit_price, reason)
+```
+
+---
+
+## 11. Updated Implementation Roadmap
+
+### Phase 0 — Backtest Audit Gate (Hard Blocking)
+
+> **No model proceeds to live paper trading without passing the 7-step Phase 0 protocol.** This gate is unconditional.
+
+**7-Step Phase 0 Protocol:**
+
+```
+Step 1 — DATA INTEGRITY AUDIT
+  ✓ Verify no forward-looking features in feature set
+  ✓ Confirm OHLCV data sources and adjustment methodology
+  ✓ Check for survivorship bias in universe selection
+  ✓ Validate no data leakage between train/test splits
+
+Step 2 — REGIME COVERAGE AUDIT
+  ✓ Ensure training data covers all 4 regimes
+  ✓ Ensure test set includes TRENDING_DOWN periods
+  ✓ Minimum 252 trading days per regime in training set
+
+Step 3 — WALK-FORWARD VALIDATION
+  ✓ Minimum 3 out-of-sample windows
+  ✓ Each window: 90 days minimum
+  ✓ No parameter refitting between windows
+
+Step 4 — PERFORMANCE GATE METRICS
+  ✓ Win Rate >= 60% on out-of-sample combined
+  ✓ Sharpe Ratio >= 1.0 on out-of-sample
+  ✓ Max Drawdown <= 20% in any test window
+  ✓ Profit Factor >= 1.3
+
+Step 5 — TREND_DOWN REMEDIATION CHECK
+  ✓ Measure win rate in TRENDING_DOWN regime specifically
+  ✓ If TRENDING_DOWN win rate < 50%: apply SHORT-side penalty flag
+  ✓ Document regime-conditional performance table
+
+Step 6 — RSI ABLATION TEST
+  ✓ Run model with RSI features removed
+  ✓ Performance must not degrade >5% — confirms RSI not load-bearing
+  ✓ Block any model where RSI is single-feature driver
+
+Step 7 — DETERMINISTIC SAFETY LAYER TEST
+  ✓ Inject synthetic edge cases: gaps, halts, earnings days, zero volume
+  ✓ Confirm all hard filters trigger correctly
+  ✓ Confirm state-lock prevents duplicate orders
+  ✓ Sign off: human review of audit log
+```
+
+---
+
+### Phase 1 — Foundation (Weeks 1–4)
+
+| Task | Owner | Gate |
+|---|---|---|
+| Data fetcher with multi-TF caching | Dev | Unit tests pass |
+| Regime detector (4-class) | Dev | Accuracy ≥ 80% on labeled test set |
+| FinRL-X baseline training (PPO, 1 ticker) | Dev | Phase 0 audit pass |
+| Deterministic safety filter | Dev | All edge cases pass |
+| Alpaca paper broker connector | Dev | Live connection verified |
+| Basic Streamlit GUI skeleton | Dev | Renders without error |
+
+---
+
+### Phase 2 — Core Engines (Weeks 5–8)
+
+| Task | Owner | Gate |
+|---|---|---|
+| Multi-timeframe analyzer (all 6 TFs) | Dev | Output validation suite |
+| ML Factor Model training | Dev | AUC ≥ 0.60 OOS |
+| Ensemble aggregator with regime-conditional weights | Dev | Backtested conviction calibration |
+| LLM Quality Gate integration | Dev | Smoke test on 50 signals |
+| RAG memory store (ChromaDB) | Dev | CRUD + retrieval tests |
+| Position sizer with AI slider | Dev | Hard limit assertion tests |
+
+---
+
+### Phase 3 — GUI & Integration (Weeks 9–12)
+
+| Task | Owner | Gate |
+|---|---|---|
+| BIOS-style config tab (General + Advanced) | Dev | UX review |
+| Portfolio scanner + watchlist | Dev | Live scan with 10 tickers |
+| Signal table with approve/reject flow | Dev | End-to-end paper order placed |
+| Performance analytics tab | Dev | Equity curve renders correctly |
+| Order manager + state lock | Dev | Concurrent order test |
+| DrawdownGuard live integration | Dev | Halt triggers correctly |
+
+---
+
+### Phase 4 — Learning Engine (Weeks 13–16)
+
+| Task | Owner | Gate |
+|---|---|---|
+| RLMF reward shaping integration | Dev | Reward distribution validation |
+| RAG cross-ticker retrieval | Dev | Retrieval latency < 200ms |
+| Retraining controller | Dev | Triggers fire on degradation |
+| Per-ticker win rate tracking | Dev | Displayed in Learning Stats tab |
+| Full Phase 0 re-audit on ensemble | Dev | All 7 steps signed off |
+
+---
+
+### Phase 5 — Hardening & Production (Weeks 17–20)
+
+| Task | Owner | Gate |
+|---|---|---|
+| Stress test: 500 signals end-to-end | Dev | No crashes, all hard limits held |
+| Win rate validation: 100 paper trades | Dev | ≥ 60% win rate |
+| IBKR fallback connector | Dev | Orders verified |
+| Documentation + API reference | Dev | Complete |
+| Final Phase 0 sign-off for production | Dev + Human Review | Unconditional pass |
+
+---
+
+## 12. Backtest Hygiene Rules & Non-Negotiable Constraints
+
+### 12.1 Backtest Hygiene Rules
+
+These rules apply at all times. Violation of any rule invalidates the backtest and restarts Phase 0.
+
+```
+RULE 1 — NO LOOKAHEAD BIAS
+  All features must be computed using only data available at signal time T.
+  No use of T+1 open, T+1 high, or any future price in feature construction.
+  Validated by: data_leakage_check() in Phase 0 Step 1.
+
+RULE 2 — POINT-IN-TIME DATA ONLY
+  Fundamental data (earnings, splits, dividends) must be sourced from
+  point-in-time databases. No revised data that wouldn't have been
+  available at T.
+
+RULE 3 — WALK-FORWARD MANDATORY
+  Simple in-sample/out-of-sample splits are insufficient.
+  Minimum 3 rolling walk-forward windows required.
+  No parameter fitting on test windows.
+
+RULE 4 — REGIME COVERAGE REQUIRED
+  Training data must include all 4 regime types.
+  Failing to cover TRENDING_DOWN in training produces invalidated SHORT-side models.
+
+RULE 5 — TRANSACTION COST REALISM
+  All backtest PnL calculations must include:
+    - Commission: $0.005/share (Alpaca default)
+    - Slippage model: 0.1% for liquid stocks, 0.3% for low-liquidity
+    - Market impact: position_value / avg_daily_volume * 0.1
+
+RULE 6 — NO BACKTEST OVERFITTING
+  Any strategy with > 5 tuned parameters requires additional
+  out-of-sample confirmation window beyond the standard 3.
+  RSI-only strategies are unconditionally blocked.
+
+RULE 7 — SURVIVORSHIP BIAS CONTROL
+  Universe of tickers at time T must not include companies that
+  were added to indices after T (forward-surviving bias).
+  Use delisted ticker databases for historical tests.
+```
+
+---
+
+### 12.2 Non-Negotiable Constraints
+
+```
+NC-1  Hard stop 5% max risk per trade — no override
+NC-2  Hard stop 20% portfolio drawdown = full system halt, no new trades
+NC-3  No entries within 2 calendar days of earnings announcement
+NC-4  No trades in stocks with < 500,000 average daily volume
+NC-5  RSI as sole signal is permanently blocked
+NC-6  FinRL-X output alone is not sufficient for trade entry — ensemble required
+NC-7  Phase 0 must pass before paper trading — no exceptions
+NC-8  All orders are limit orders (no naked market orders) unless explicitly overridden
+NC-9  LLM layer cannot override ensemble direction — quality gate only
+NC-10 State-lock enforced: no duplicate concurrent orders on same ticker
+NC-11 TRENDING_DOWN regime receives additional scrutiny on LONG signals
+NC-12 All hard limits are code constants — not config values, not DB values
+NC-13 Emergency stop button must be functional and halt all pending orders
+NC-14 Minimum 60% out-of-sample win rate required before live paper trading
+NC-15 Cross-ticker RAG learning must include recency weighting (decay half-life ≤ 90 days)
+```
+
+---
+
+### 12.3 TREND_DOWN Remediation Protocol
+
+When the regime detector identifies TRENDING_DOWN:
+
+```python
+TREND_DOWN_RULES = {
+    "long_signal_conviction_penalty":  0.30,  # multiply conviction by 0.70
+    "long_signal_quality_floor_raise": 0.10,  # raise min quality by 10pp
+    "short_signal_conviction_boost":   0.10,  # multiply conviction by 1.10
+    "require_multi_tf_long_alignment": True,  # all TFs must agree for LONG
+    "max_long_position_size_pct":      0.02,  # cap LONG positions at 2%
+    "finrl_x_agent_override": "ppo_TRENDING_DOWN"  # force regime-matched agent
+}
+```
+
+---
+
+## 13. Success Criteria
+
+### 13.1 Primary Success Metrics
+
+| Metric | Minimum | Target |
+|---|---|---|
+| Out-of-Sample Win Rate | 60% | 80–90% |
+| Sharpe Ratio (paper trading) | 1.0 | ≥ 2.0 |
+| Max Drawdown | < 20% | < 10% |
+| Profit Factor | ≥ 1.3 | ≥ 2.0 |
+| Annual Return (paper) | ≥ 50% | 900%+ (10x/year) |
+| Phase 0 Audit Pass Rate | 100% | 100% (non-negotiable) |
+
+---
+
+### 13.2 System Quality Metrics
+
+| Metric | Target |
+|---|---|
+| Signal generation latency (per ticker) | < 5 seconds |
+| LLM quality gate latency | < 3 seconds |
+| RAG retrieval latency | < 200ms |
+| GUI scan cycle display refresh | < 10 seconds |
+| Order submission latency | < 2 seconds |
+| RLMF feedback incorporation lag | ≤ next retrain cycle |
+
+---
+
+### 13.3 Learning Improvement Criteria
+
+The system is considered to be actively learning and improving if:
+
+- Per-ticker win rate improves by ≥ 5% over first 100 trades on any ticker
+- Cross-ticker RAG retrieval improves win rate on new tickers relative to baseline by ≥ 3%
+- FinRL-X retrain events result in ≥ 5% win rate improvement in the triggered regime within 20 subsequent trades
+- LLM quality score correlation with realized PnL: Pearson r ≥ 0.35
+
+---
+
+### 13.4 Definition of a Successful Prediction
+
+A prediction is counted as **successful** if:
+
+```python
+def is_successful_prediction(signal: TradingSignal,
+                              outcome: dict) -> bool:
+    """
+    Success = trade reached profit target before stop loss,
+    OR trade was exited at time-based stop with positive PnL.
+    """
+    return outcome["won"] == True
+    # where won = True iff:
+    #   exit_reason in ["PROFIT_TARGET", "TIME_EXIT_POSITIVE"]
+    #   AND pnl_pct > 0 after costs
+```
+
+---
+
+*AlphaChart v3.4 — End of Design Document*
+*Revision: v3.4.0 | Status: Implementation-Ready*

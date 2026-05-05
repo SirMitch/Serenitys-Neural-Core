@@ -1,0 +1,660 @@
+{
+  "metadata": {
+    "version": "1.5",
+    "last_updated": "2026-05-04",
+    "total_tests": 51,
+    "categories": 5
+  },
+  "tests": [
+    {
+      "id": "MEM_L1",
+      "name": "test_layer1_active_context",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [
+        "core/mind/memory_offloader.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 50
+    },
+    {
+      "id": "MEM_L2",
+      "name": "test_layer2_working_memory",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [
+        "core/mind/memory_offloader.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 45
+    },
+    {
+      "id": "MEM_L3_EP",
+      "name": "test_layer3_episodic",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [
+        "core/memory/episodic_store.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 120
+    },
+    {
+      "id": "MEM_L3_CTX",
+      "name": "test_layer3_context_tree",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [
+        "core/memory/context_tree.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 85
+    },
+    {
+      "id": "MEM_L3_WDB",
+      "name": "test_layer3_worlddb",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [
+        "core/adaptive/worlddb_store.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 90
+    },
+    {
+      "id": "MEM_L4",
+      "name": "test_layer4_semantic_graph",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [
+        "core/memory/semantic_graph.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 110
+    },
+    {
+      "id": "MEM_L5_ADDR",
+      "name": "test_layer5_addr",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [
+        "docs/design doc viewer/ADDR.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 60
+    },
+    {
+      "id": "MEM_L5_PAR",
+      "name": "test_layer5_parametric",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [
+        "core/adaptive/parametric_distiller.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 95
+    },
+    {
+      "id": "MEM_L5_ADP",
+      "name": "test_layer5_adaptive",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [
+        "core/adaptive/__init__.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 70
+    },
+    {
+      "id": "INT_L3L5",
+      "name": "test_layer3_to_layer5_pipeline",
+      "file": "test_new_modules_integration.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": [
+        "core/memory/episodic_store.py",
+        "core/adaptive/parametric_distiller.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 150
+    },
+    {
+      "id": "INT_CROSS",
+      "name": "test_cross_layer_retrieval",
+      "file": "test_new_modules_integration.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": [
+        "core/memory",
+        "core/adaptive"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 180
+    },
+    {
+      "id": "INT_LG",
+      "name": "test_langgraph_new_modules",
+      "file": "test_new_modules_integration.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": [
+        "core/langgraph_orchestrator.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-03",
+      "success_rate": 100,
+      "avg_duration_ms": 200
+    },
+      {
+        "id": "MCP_SCAN",
+        "name": "test_scan_market_cache_miss",
+        "file": "test_mcp_tools.py",
+        "category": "Integration & Workflow Tests",
+        "prerequisites": [
+          "core/mcp/alphachat_mcp_server.py"
+        ],
+        "expected_outcome": "PASS",
+        "version": "1.0",
+        "last_run": "2026-05-04",
+        "success_rate": 100,
+        "avg_duration_ms": 150
+      },
+    {
+      "id": "MCP_ORDER",
+      "name": "test_alphachat_order_action",
+      "file": "test_mcp_tools.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": [
+        "core/mcp/alphachat_mcp_server.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "MCP_BACK",
+      "name": "test_alphachat_backtest_query",
+      "file": "test_mcp_tools.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": [
+        "core/mcp/alphachat_mcp_server.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "MCP_UNI",
+      "name": "test_alphachat_get_universe",
+      "file": "test_mcp_tools.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": [
+        "core/mcp/alphachat_mcp_server.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "MCP_POS",
+      "name": "test_alphachat_get_positions",
+      "file": "test_mcp_tools.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": [
+        "core/mcp/alphachat_mcp_server.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "MCP_MAINT",
+      "name": "test_alphachat_maintenance",
+      "file": "test_mcp_tools.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": [
+        "core/mcp/alphachat_mcp_server.py"
+      ],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTLAYER1MEMORYOFFLOADER",
+      "name": "test_layer1_memory_offloader",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTLAYER3EPISODIC",
+      "name": "test_layer3_episodic",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTLAYER4SEMANTIC",
+      "name": "test_layer4_semantic",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTLAYER5ADDR",
+      "name": "test_layer5_addr",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTINTEGRATION",
+      "name": "test_integration",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTLANGGRAPHORCHESTRATOR",
+      "name": "test_langgraph_orchestrator",
+      "file": "test_memory_layers.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTLAYER3CONTEXTTREE",
+      "name": "test_layer3_context_tree",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTLAYER3WORLDDB",
+      "name": "test_layer3_worlddb",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTLAYER5PARAMETRIC",
+      "name": "test_layer5_parametric",
+      "file": "test_memory_layers.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTLAYER3TOLAYER5PIPELINE",
+      "name": "test_layer3_to_layer5_pipeline",
+      "file": "test_new_modules_integration.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTCROSSLAYERRETRIEVAL",
+      "name": "test_cross_layer_retrieval",
+      "file": "test_new_modules_integration.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTLANGGRAPHWITHNEWMODULES",
+      "name": "test_langgraph_with_new_modules",
+      "file": "test_new_modules_integration.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "TESTIMPORTS",
+      "name": "test_imports",
+      "file": "test_serenity_verify.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": [],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "SEC_INJ_SQL",
+      "name": "test_scan_market_sql_injection",
+      "file": "test_security_guardrail.py",
+      "category": "Security & Guardrail Tests",
+      "prerequisites": ["core/mcp/alphachat_mcp_server.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "SEC_INJ_CMD",
+      "name": "test_order_action_command_injection",
+      "file": "test_security_guardrail.py",
+      "category": "Security & Guardrail Tests",
+      "prerequisites": ["core/mcp/alphachat_mcp_server.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "SEC_AUTH_POS",
+      "name": "test_get_positions_without_auth",
+      "file": "test_security_guardrail.py",
+      "category": "Security & Guardrail Tests",
+      "prerequisites": ["core/mcp/alphachat_mcp_server.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "GUARD_INJ_SYM",
+      "name": "test_scan_market_invalid_symbol",
+      "file": "test_security_guardrail.py",
+      "category": "Security & Guardrail Tests",
+      "prerequisites": ["core/mcp/alphachat_mcp_server.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "GUARD_INJ_ID",
+      "name": "test_order_action_invalid_id",
+      "file": "test_security_guardrail.py",
+      "category": "Security & Guardrail Tests",
+      "prerequisites": ["core/mcp/alphachat_mcp_server.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "PERF_MICRO_LAT",
+      "name": "test_micro_step_latency",
+      "file": "test_performance_efficiency.py",
+      "category": "Performance & Efficiency Tests",
+      "prerequisites": ["core/llm/micro_llm.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "PERF_MICRO_TOK",
+      "name": "test_token_budget_enforcement",
+      "file": "test_performance_efficiency.py",
+      "category": "Performance & Efficiency Tests",
+      "prerequisites": ["core/llm/micro_llm.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "PERF_MICRO_ITER",
+      "name": "test_iteration_limit",
+      "file": "test_performance_efficiency.py",
+      "category": "Performance & Efficiency Tests",
+      "prerequisites": ["core/llm/micro_llm.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "EFF_MCP_THRU",
+      "name": "test_scan_market_throughput",
+      "file": "test_performance_efficiency.py",
+      "category": "Performance & Efficiency Tests",
+      "prerequisites": ["core/mcp/alphachat_mcp_server.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "MICRO_CACHE_MISS",
+      "name": "test_cache_miss_then_hit",
+      "file": "test_micro_llm_cache.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": ["core/llm/micro_llm.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "MICRO_CACHE_KEY",
+      "name": "test_cache_key_consistency",
+      "file": "test_micro_llm_cache.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": ["core/llm/micro_llm.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "MICRO_CACHE_TOKEN",
+      "name": "test_micro_step_token_tracking",
+      "file": "test_micro_llm_cache.py",
+      "category": "Unit/Component Tests",
+      "prerequisites": ["core/llm/micro_llm.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "AGENT_PLANNER",
+      "name": "test_planner_micro_llm_integration",
+      "file": "test_agent_behavior.py",
+      "category": "Agent Behavior & Reasoning Tests",
+      "prerequisites": ["core/agents/planner_agent.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "AGENT_EXECUTOR",
+      "name": "test_executor_atomic_steps",
+      "file": "test_agent_behavior.py",
+      "category": "Agent Behavior & Reasoning Tests",
+      "prerequisites": ["core/agents/executor_agent.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "AGENT_CRITIC",
+      "name": "test_critic_validation_steps",
+      "file": "test_agent_behavior.py",
+      "category": "Agent Behavior & Reasoning Tests",
+      "prerequisites": ["core/agents/critic_agent.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "AGENT_RESEARCHER",
+      "name": "test_researcher_atomic_research",
+      "file": "test_agent_behavior.py",
+      "category": "Agent Behavior & Reasoning Tests",
+      "prerequisites": ["core/agents/researcher_agent.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "AGENT_GUARDIAN",
+      "name": "test_guardian_safety_checks",
+      "file": "test_agent_behavior.py",
+      "category": "Agent Behavior & Reasoning Tests",
+      "prerequisites": ["core/agents/guardian_agent.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 0,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "AGENT_WORKFLOW",
+      "name": "test_micro_llm_workflow_with_agents",
+      "file": "test_agent_behavior.py",
+      "category": "Agent Behavior & Reasoning Tests",
+      "prerequisites": ["core/llm/micro_llm.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "N/A",
+      "success_rate": 100,
+      "avg_duration_ms": 0
+    },
+    {
+      "id": "E2E_MICRO_SCAN",
+      "name": "test_micro_llm_with_market_scan",
+      "file": "test_end_to_end_micro_scan.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": ["core/llm/micro_llm.py", "core/mcp/alphachat_mcp_server.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-04",
+      "success_rate": 100,
+      "avg_duration_ms": 540
+    },
+    {
+      "id": "E2E_MICRO_ITER",
+      "name": "test_micro_iterations_with_scan",
+      "file": "test_end_to_end_micro_scan.py",
+      "category": "Integration & Workflow Tests",
+      "prerequisites": ["core/llm/micro_llm.py"],
+      "expected_outcome": "PASS",
+      "version": "1.0",
+      "last_run": "2026-05-04",
+      "success_rate": 100,
+      "avg_duration_ms": 520
+    }
+  ]
+}
