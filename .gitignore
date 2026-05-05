@@ -1,0 +1,52 @@
+# Serenity Neural-Core .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# Environment
+.env
+.env.tmp
+.micro_llm.env
+*.log
+
+# Backups (keep root .backups but exclude nested)
+.backups/**/AlphaChart_pre_migrate_20260504.tar.gz/
+.backups/**/finrlx/
+.backups/**/docs/
+.backups/**/ui/
+.backups/**/logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Session logs (keep structure but ignore large logs)
+session_logs/*.log
+session_logs/*/
+
+# Test
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temp files
+TEMP.txt
+TEMP_last_10.txt
+addr_tail.tmp
