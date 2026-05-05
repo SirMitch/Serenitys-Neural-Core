@@ -3,23 +3,22 @@
 Serenity Neural-Core v1.0 — Main Entry Point with Full Resilience
 Phase 2-3: Session Resilience Hardening + Audit Trail Integration
 """
-
-import sys, os
+import sys, os, yaml, time
 from pathlib import Path
-import time
 from datetime import datetime
-from core import heartbeat, auto_save, recovery, dual_logging, control_center
-from core import serenity as kernel_module
 
+# Phase 2: Resilience components
+from core import heartbeat, auto_save, recovery, dual_logging, control_center, session_manager, serenity as kernel_module
 
-class SerenityKernel(kernel_module.SerenityKernel) :
+class SereniaKernel(kernel_module.SerenityKernel) :
     """Serenity Neural-Core Kernel — Integrates all Phase 2 Resilience Components"""
 
     def __init__(self, session_subdir=None):
         super().__init__()
         self.session_subdir = session_subdir or (os.environ.get("SESSION_SUBDIR") or "session")
-        self.root = self.project_path
+        self.root = Path(__file__).parent
         self.kernel_state_file = self.root / "docs" / "state.yaml"
+        self.control_center = None  # Phase 3: Control Center orchestration hub
         
     def bootstrap(self):
         """Complete kernel boot sequence with Phase 2-3 resilience"""
@@ -32,7 +31,7 @@ class SerenityKernel(kernel_module.SerenityKernel) :
         # Initialize persistence layer
         self.state_file = self.root / "docs" / "state.yaml"
         self.recovery_log = self.session_subdir / "recovery.log"
-        self.recovery_log.parent.mkdir(parents=True, exist_ok=True)
+
         
         return self
     
@@ -41,7 +40,7 @@ class SerenityKernel(kernel_module.SerenityKernel) :
         print("\n[Kernel] Starting session...")
         
         # Phase 2: Start heartbeat watchdog
-        hb = heart beat.Heartbeat()
+        hb = heartbeat.Heartbeat()
         hb.start()
         print("[Resilience] Heartbeat started - interval: 5s")
         
@@ -84,28 +83,18 @@ class SerenityKernel(kernel_module.SerenityKernel) :
 
         except Exception as e:
             print(f"[Recovery] Error checking heartbeat: {e}")
-        
         return self
-
-class NeuralAIKernel(SerenityKernel):
-    """Neural AI Kernel with enhanced resilience"""
-
-    def __init__(self, session_subdir=None):
-        super().__init__(session_subdir)
-
-    def initialize_ai_system(self):
-        """Initialize neural AI system with phase 2-3 resilience features
-        TODO: Connect to neural_ai_loader.py for full AI integration
-        """
-        print("[AI] Neural AI Initialization...")
-        return "initialized"
 
 
 if __name__ == "__main__":
     import sys
     
     try:
-        kernel = kernel_module.SerenityKernel()
+        # Phase 3: Control Center orchestration hub
+        cc = control_center.ControlCenter()
+        print("[Phase 3] Control center initialized")
+        
+        kernel = SereniaKernel()
         kernel.boot()
         
         if len(sys.argv) > 1:
